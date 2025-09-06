@@ -1,0 +1,27 @@
+[
+  {
+    "key": "users",
+    "name": "Users",
+    "permissions": ["createUser", "getUsers", "updateUser", "deleteUser"]
+  },
+  {
+    "key": "customers",
+    "name": "Customers",
+    "permissions": [
+      "createCustomer",
+      "getCustomers",
+      "updateCustomer",
+      "deleteCustomer"
+    ]
+  },
+  {
+    "key": "transactions",
+    "name": "Transactions",
+    "permissions": [
+      "addTransaction",
+      "getTransactions",
+      "updateTransaction",
+      "deleteTransaction"
+    ]
+  }
+]

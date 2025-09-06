@@ -1,0 +1,41 @@
+[
+  {
+    "role": "owner",
+    "permissions": [
+      "getBusiness",
+      "updateBusiness",
+      "createCustomer",
+      "getCustomers",
+      "updateCustomer",
+      "deleteCustomer",
+      "createUser",
+      "getUsers",
+      "updateUser",
+      "deleteUser",
+      "addTransaction",
+      "getTransactions",
+      "updateTransaction",
+      "deleteTransaction"
+    ]
+  },
+  {
+    "role": "admin",
+    "permissions": [
+      "createCustomer",
+      "getCustomers",
+      "updateCustomer",
+      "createUser",
+      "getUsers",
+      "updateUser",
+      "deleteUser",
+      "addTransaction",
+      "getTransactions",
+      "updateTransaction",
+      "deleteTransaction"
+    ]
+  },
+  {
+    "role": "staff",
+    "permissions": ["getCustomers", "addTransaction", "getTransactions"]
+  }
+]
