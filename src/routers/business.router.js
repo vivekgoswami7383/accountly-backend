@@ -3,6 +3,8 @@ import {
   create,
   businesses,
   business,
+  update,
+  remove,
 } from "../controllers/business.controller.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
 import { validate } from "../middlewares/validate.js";
@@ -19,8 +21,17 @@ router.post(
   create
 );
 
-router.get("/", authenticate, businesses);
+router.get("/", authenticate, checkPermissions(["getBusinesses"]), businesses);
 
-router.get("/:id", authenticate, business);
+router.get("/:id", authenticate, checkPermissions(["getBusiness"]), business);
+
+router.put("/:id", authenticate, checkPermissions(["updateBusiness"]), update);
+
+router.delete(
+  "/:id",
+  authenticate,
+  checkPermissions(["deleteBusiness"]),
+  remove
+);
 
 export default router;

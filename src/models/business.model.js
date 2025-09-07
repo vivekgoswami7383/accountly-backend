@@ -3,10 +3,24 @@ import { BUSINESS_TYPES, STATUS } from "../helpers/constants.js";
 
 const BusinessSchema = new mongoose.Schema(
   {
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+    user: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: false, // Made optional for business creation flow
+      },
+      first_name: {
+        type: String,
+        required: false, // Made optional for business creation flow
+      },
+      last_name: {
+        type: String,
+        required: false, // Made optional for business creation flow
+      },
+      phone: {
+        type: String,
+        required: false, // Made optional for business creation flow
+      },
     },
     business_name: {
       type: String,

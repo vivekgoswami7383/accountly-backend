@@ -3,10 +3,16 @@ import { STATUS } from "../helpers/constants.js";
 
 const CustomerSchema = new mongoose.Schema(
   {
-    business_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Business",
-      required: true,
+    business: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Business",
+        required: true,
+      },
+      business_name: {
+        type: String,
+        required: true,
+      },
     },
     first_name: {
       type: String,

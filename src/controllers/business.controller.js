@@ -6,7 +6,15 @@ import {
   USER_ROLES,
 } from "../helpers/constants.js";
 import { hashPassword } from "../helpers/functions.js";
-import usersPermissions from "../data/user-permissions.json" with { type: "json" };
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const usersPermissions = JSON.parse(
+  readFileSync(join(__dirname, "../data/user-permissions.json"), "utf8")
+);
 
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
@@ -16,6 +24,8 @@ export const create = async (req, res) => {
     business_name,
     business_type,
     address,
+    logo,
+    gst_number,
     user: { first_name, last_name, phone, password },
   } = req.body;
 
@@ -33,8 +43,8 @@ export const create = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
+    // Create user first without business field
     const createUser = await User.create({
-      business_id: null,
       first_name,
       last_name,
       phone,
@@ -42,26 +52,43 @@ export const create = async (req, res) => {
       role: USER_ROLES.OWNER,
     });
 
-    const userId = createUser._id;
-
+    // Create business with user reference
     const business = await Business.create({
-      user_id: userId,
+      user: {
+        _id: createUser._id,
+        first_name,
+        last_name,
+        phone,
+      },
       business_name,
       business_type,
       address,
+      logo: logo || "",
+      gst_number: gst_number || "",
     });
+
+    // Update user with business reference
+    await User.updateOne(
+      { _id: createUser._id },
+      {
+        $set: {
+          business: {
+            _id: business._id,
+            business_name: business_name,
+          },
+        },
+      }
+    );
 
     const permissions = usersPermissions.find(
       (usersPermission) => usersPermission.role === USER_ROLES.OWNER
     ).permissions;
 
-    await User.updateOne(
-      { _id: userId },
-      { business_id: business._id, $set: { permissions } }
-    );
+    await User.updateOne({ _id: createUser._id }, { $set: { permissions } });
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
+      data: { business, user: createUser },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -73,7 +100,7 @@ export const create = async (req, res) => {
 
 export const businesses = async (req, res) => {
   try {
-    const businesses = await Business.findOne({
+    const businesses = await Business.find({
       status: STATUS.ACTIVE,
     });
     return res.status(STATUS_CODES.SUCCESS).json({
@@ -106,6 +133,62 @@ export const business = async (req, res) => {
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: { business },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const business = await Business.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+
+    if (!business) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.BUSINESS_NOT_FOUND,
+      });
+    }
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { business },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const business = await Business.findByIdAndUpdate(
+      id,
+      { status: STATUS.DELETED },
+      { new: true }
+    );
+
+    if (!business) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.BUSINESS_NOT_FOUND,
+      });
+    }
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      message: "Business deleted successfully",
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

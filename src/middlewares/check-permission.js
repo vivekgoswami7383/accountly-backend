@@ -1,6 +1,14 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import { USER_ROLES } from "../helpers/constants.js";
-import usersPermissions from "../data/user-permissions.json" with { type: "json" };
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const usersPermissions = JSON.parse(
+  readFileSync(join(__dirname, "../data/user-permissions.json"), "utf8")
+);
 import mongoose from "mongoose";
 
 const User = mongoose.model("User");

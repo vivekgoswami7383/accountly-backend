@@ -3,9 +3,16 @@ import { STATUS, USER_ROLES } from "../helpers/constants.js";
 
 const UserSchema = new mongoose.Schema(
   {
-    business_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Business",
+    business: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Business",
+        required: false,
+      },
+      business_name: {
+        type: String,
+        required: false,
+      },
     },
     first_name: {
       type: String,

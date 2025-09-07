@@ -1,8 +1,14 @@
 [
   {
-    "key": "users",
-    "name": "Users",
-    "permissions": ["createUser", "getUsers", "updateUser", "deleteUser"]
+    "key": "business",
+    "name": "Business",
+    "permissions": [
+      "createBusiness",
+      "getBusiness",
+      "updateBusiness",
+      "deleteBusiness",
+      "getBusinesses"
+    ]
   },
   {
     "key": "customers",

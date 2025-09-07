@@ -2,15 +2,31 @@ import mongoose from "mongoose";
 
 const TransactionSchema = new mongoose.Schema(
   {
-    business_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Business",
-      required: true,
+    business: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Business",
+        required: true,
+      },
+      business_name: {
+        type: String,
+        required: true,
+      },
     },
-    customer_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
-      required: true,
+    customer: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Customer",
+        required: true,
+      },
+      first_name: {
+        type: String,
+        required: true,
+      },
+      last_name: {
+        type: String,
+        required: true,
+      },
     },
     type: {
       type: String,

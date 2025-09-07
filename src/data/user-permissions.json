@@ -1,5 +1,23 @@
 [
   {
+    "role": "super_admin",
+    "permissions": [
+      "createBusiness",
+      "getBusiness",
+      "updateBusiness",
+      "deleteBusiness",
+      "getBusinesses",
+      "createCustomer",
+      "getCustomers",
+      "updateCustomer",
+      "deleteCustomer",
+      "addTransaction",
+      "getTransactions",
+      "updateTransaction",
+      "deleteTransaction"
+    ]
+  },
+  {
     "role": "owner",
     "permissions": [
       "getBusiness",
@@ -8,10 +26,6 @@
       "getCustomers",
       "updateCustomer",
       "deleteCustomer",
-      "createUser",
-      "getUsers",
-      "updateUser",
-      "deleteUser",
       "addTransaction",
       "getTransactions",
       "updateTransaction",
@@ -24,10 +38,7 @@
       "createCustomer",
       "getCustomers",
       "updateCustomer",
-      "createUser",
-      "getUsers",
-      "updateUser",
-      "deleteUser",
+      "deleteCustomer",
       "addTransaction",
       "getTransactions",
       "updateTransaction",

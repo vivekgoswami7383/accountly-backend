@@ -1,23 +1,24 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
-import Customer from "../models/customer.model.js";
+import Transaction from "../models/transaction.model.js";
 
 export const create = async (req, res) => {
   try {
-    const customer = await Customer.findOne({
-      phone: req.body.phone,
-      status: STATUS.ACTIVE,
-    });
-    if (customer) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({
-        success: false,
-        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
-      });
-    }
+    const { business_id, business_name } = req.user; // Get business info from authenticated user
 
-    await Customer.create(req.body);
+    // Add business reference to transaction data
+    const transactionData = {
+      ...req.body,
+      business: {
+        _id: business_id,
+        business_name: business_name,
+      },
+    };
+
+    const transaction = await Transaction.create(transactionData);
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
+      data: { transaction },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -27,17 +28,17 @@ export const create = async (req, res) => {
   }
 };
 
-export const customers = async (req, res) => {
-  const { business } = req.user;
+export const transactions = async (req, res) => {
+  const { business_id } = req.user;
 
   try {
-    const customers = await Customer.find({
-      "business._id": business._id,
-      status: STATUS.ACTIVE,
-    });
+    const transactions = await Transaction.find({
+      "business._id": business_id,
+    }).sort({ created_at: -1 });
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { customers },
+      data: { transactions },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -50,20 +51,20 @@ export const customers = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const customer = await Customer.findByIdAndUpdate(id, req.body, {
+    const transaction = await Transaction.findByIdAndUpdate(id, req.body, {
       new: true,
     });
 
-    if (!customer) {
+    if (!transaction) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
-        message: "Customer not found",
+        message: "Transaction not found",
       });
     }
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      customer,
+      transaction,
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -76,22 +77,18 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const { id } = req.params;
-    const customer = await Customer.findByIdAndUpdate(
-      id,
-      { status: STATUS.DELETED },
-      { new: true }
-    );
+    const transaction = await Transaction.findByIdAndDelete(id);
 
-    if (!customer) {
+    if (!transaction) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
-        message: "Customer not found",
+        message: "Transaction not found",
       });
     }
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      message: "Customer deleted successfully",
+      message: "Transaction deleted successfully",
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
