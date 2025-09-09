@@ -9,4 +9,5 @@ export const createCustomerSchema = Joi.object({
   last_name: Joi.string().required(),
   phone: Joi.string().required(),
   balance: Joi.number().required(),
+  address: Joi.number().optional().allow(""),
 });

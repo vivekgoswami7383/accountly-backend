@@ -31,6 +31,9 @@ const CustomerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    address: {
+      type: String,
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
