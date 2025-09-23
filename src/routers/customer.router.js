@@ -4,6 +4,7 @@ import {
   customers,
   update,
   remove,
+  customer,
 } from "../controllers/customer.controller.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
 import { validate } from "../middlewares/validate.js";
@@ -15,19 +16,21 @@ const router = express.Router();
 router.post(
   "/",
   authenticate,
-  checkPermissions(["createCustomer"]),
+  checkPermissions(["customer.create"]),
   validate(createCustomerSchema),
   create
 );
 
-router.get("/", authenticate, checkPermissions(["getCustomers"]), customers);
+router.get("/", authenticate, checkPermissions(["customers.get"]), customers);
 
-router.put("/:id", authenticate, checkPermissions(["updateCustomer"]), update);
+router.get("/:id", authenticate, checkPermissions(["customers.get"]), customer);
+
+router.put("/:id", authenticate, checkPermissions(["customer.update"]), update);
 
 router.delete(
   "/:id",
   authenticate,
-  checkPermissions(["deleteCustomer"]),
+  checkPermissions(["customer.delete"]),
   remove
 );
 

@@ -14,16 +14,14 @@ const CustomerSchema = new mongoose.Schema(
         required: true,
       },
     },
-    first_name: {
+    name: {
       type: String,
-      required: true,
-    },
-    last_name: {
-      type: String,
+      trim: true,
       required: true,
     },
     phone: {
       type: String,
+      trim: true,
       required: true,
       unique: true,
     },
@@ -31,8 +29,23 @@ const CustomerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    transaction_stats: {
+      total_sent: {
+        type: Number,
+        default: 0,
+      },
+      total_received: {
+        type: Number,
+        default: 0,
+      },
+      total_transactions: {
+        type: Number,
+        default: 0,
+      },
+    },
     address: {
       type: String,
+      trim: true,
     },
     status: {
       type: Number,

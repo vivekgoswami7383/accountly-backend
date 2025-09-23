@@ -23,7 +23,7 @@ import routes from "./src/routers/index.routes.js";
 
 app.use("/api", routes);
 
-app.get("/health-check", (req, res) => {
+app.get("/health", (req, res) => {
   res.status(STATUS_CODES.SUCCESS).send("Server is running");
 });
 

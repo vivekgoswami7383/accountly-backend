@@ -33,7 +33,8 @@ export const MESSAGES = {
     USER_NOT_FOUND: "User not found",
     INVALID_PASSWORD: "Invalid password",
     BUSINESS_NOT_FOUND: "Business not found",
-    CUSTOMER_ALREADY_EXISTS: "Customer already exists",
+    CUSTOMER_ALREADY_EXISTS: "Customer already exists with this phone number",
+    CUSTOMER_NOT_FOUND: "Customer not found",
   },
 };
 

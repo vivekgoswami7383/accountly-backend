@@ -3,6 +3,7 @@ import { STATUS_CODES, MESSAGES, STATUS } from "../helpers/constants.js";
 import { comparePassword, generateToken } from "../helpers/functions.js";
 
 const User = mongoose.model("User");
+const Business = mongoose.model("Business");
 
 export const login = async (req, res) => {
   const { phone, password } = req.body;
@@ -61,9 +62,13 @@ export const me = async (req, res) => {
       });
     }
 
+    const business = await Business.findOne({
+      _id: user.business._id,
+    }).lean();
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { user },
+      data: { user, business },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

@@ -2,51 +2,52 @@
   {
     "role": "super_admin",
     "permissions": [
-      "createBusiness",
-      "getBusiness",
-      "updateBusiness",
-      "deleteBusiness",
-      "getBusinesses",
-      "createCustomer",
-      "getCustomers",
-      "updateCustomer",
-      "deleteCustomer",
-      "addTransaction",
-      "getTransactions",
-      "updateTransaction",
-      "deleteTransaction"
+      "business.create",
+      "businesses.get",
+      "business.update",
+      "business.delete",
+      "businesses.list",
+      "customer.create",
+      "customers.get",
+      "customer.update",
+      "customer.delete",
+      "transaction.create",
+      "transactions.get",
+      "transaction.update",
+      "transaction.delete"
     ]
   },
   {
     "role": "owner",
     "permissions": [
-      "getBusiness",
-      "updateBusiness",
-      "createCustomer",
-      "getCustomers",
-      "updateCustomer",
-      "deleteCustomer",
-      "addTransaction",
-      "getTransactions",
-      "updateTransaction",
-      "deleteTransaction"
+      "businesses.get",
+      "business.update",
+      "customer.create",
+      "customers.get",
+      "customer.update",
+      "customer.delete",
+      "transaction.create",
+      "transactions.get_customer",
+      "transactions.get",
+      "transaction.update",
+      "transaction.delete"
     ]
   },
   {
     "role": "admin",
     "permissions": [
-      "createCustomer",
-      "getCustomers",
-      "updateCustomer",
-      "deleteCustomer",
-      "addTransaction",
-      "getTransactions",
-      "updateTransaction",
-      "deleteTransaction"
+      "customer.create",
+      "customers.get",
+      "customer.update",
+      "customer.delete",
+      "transaction.create",
+      "transactions.get",
+      "transaction.update",
+      "transaction.delete"
     ]
   },
   {
     "role": "staff",
-    "permissions": ["getCustomers", "addTransaction", "getTransactions"]
+    "permissions": ["customers.get", "transaction.create", "transactions.get"]
   }
 ]

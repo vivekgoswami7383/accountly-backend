@@ -26,7 +26,7 @@ export const create = async (req, res) => {
     address,
     logo,
     gst_number,
-    user: { first_name, last_name, phone, password },
+    user: { name, phone, password },
   } = req.body;
 
   try {
@@ -43,21 +43,17 @@ export const create = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    // Create user first without business field
     const createUser = await User.create({
-      first_name,
-      last_name,
+      name,
       phone,
       password: hashedPassword,
       role: USER_ROLES.OWNER,
     });
 
-    // Create business with user reference
     const business = await Business.create({
       user: {
         _id: createUser._id,
-        first_name,
-        last_name,
+        name,
         phone,
       },
       business_name,
@@ -67,7 +63,6 @@ export const create = async (req, res) => {
       gst_number: gst_number || "",
     });
 
-    // Update user with business reference
     await User.updateOne(
       { _id: createUser._id },
       {

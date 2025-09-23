@@ -22,7 +22,6 @@ export const authenticate = (req, res, next) => {
       next();
     })(req, res, next);
   } catch (error) {
-    console.log(error);
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: MESSAGES.RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR,

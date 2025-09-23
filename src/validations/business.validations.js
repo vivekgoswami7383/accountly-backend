@@ -8,8 +8,7 @@ export const createBusinessSchema = Joi.object({
     .valid(BUSINESS_TYPES.KIRANA_SHOP, BUSINESS_TYPES.PAN_SHOP),
   address: Joi.string().required(),
   user: Joi.object({
-    first_name: Joi.string().required(),
-    last_name: Joi.string().required(),
+    name: Joi.string().required(),
     phone: Joi.string().required(),
     password: Joi.string().min(8).required(),
   }),

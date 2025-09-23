@@ -19,29 +19,22 @@ const TransactionSchema = new mongoose.Schema(
         ref: "Customer",
         required: true,
       },
-      first_name: {
-        type: String,
-        required: true,
-      },
-      last_name: {
+      name: {
         type: String,
         required: true,
       },
     },
-    type: {
+    payment_mode: {
       type: String,
-      enum: ["cash", "upi"],
-      required: true,
+      enum: ["cash", "upi", "bank", "other"],
     },
     amount: { type: Number, required: true },
-    paid_amount: { type: Number, required: true },
-    description: { type: String },
-    due_date: { type: Date },
-    status: {
+    transaction_type: {
       type: String,
-      enum: ["pending", "completed", "cancelled"],
-      default: "pending",
+      enum: ["sent", "received"],
+      required: true,
     },
+    description: { type: String },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

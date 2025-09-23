@@ -3,31 +3,32 @@
     "key": "business",
     "name": "Business",
     "permissions": [
-      "createBusiness",
-      "getBusiness",
-      "updateBusiness",
-      "deleteBusiness",
-      "getBusinesses"
+      "business.create",
+      "businesses.get",
+      "business.update",
+      "business.delete",
+      "businesses.list"
     ]
   },
   {
-    "key": "customers",
-    "name": "Customers",
+    "key": "customer",
+    "name": "Customer",
     "permissions": [
-      "createCustomer",
-      "getCustomers",
-      "updateCustomer",
-      "deleteCustomer"
+      "customer.create",
+      "customers.get",
+      "customer.update",
+      "customer.delete"
     ]
   },
   {
-    "key": "transactions",
-    "name": "Transactions",
+    "key": "transaction",
+    "name": "Transaction",
     "permissions": [
-      "addTransaction",
-      "getTransactions",
-      "updateTransaction",
-      "deleteTransaction"
+      "transaction.create",
+      "transactions.get_customer",
+      "transactions.get",
+      "transaction.update",
+      "transaction.delete"
     ]
   }
 ]

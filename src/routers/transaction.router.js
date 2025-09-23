@@ -1,40 +1,36 @@
 import express from "express";
 import {
   create,
+  customerTransactions,
   transactions,
-  update,
-  remove,
 } from "../controllers/transaction.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
+import { validate } from "../middlewares/validate.js";
+import { createTransactionSchema } from "../validations/transaction.validation.js";
 
 const router = express.Router();
 
-// Create transaction
-router.post("/", authenticate, checkPermissions(["addTransaction"]), create);
+router.post(
+  "/",
+  authenticate,
+  validate(createTransactionSchema),
+  checkPermissions(["transaction.create"]),
+  create
+);
 
-// Get all transactions
 router.get(
   "/",
   authenticate,
-  checkPermissions(["getTransactions"]),
+  checkPermissions(["transactions.get"]),
   transactions
 );
 
-// Update transaction
-router.put(
-  "/:id",
+router.get(
+  "/customer/:customer_id",
   authenticate,
-  checkPermissions(["updateTransaction"]),
-  update
-);
-
-// Delete transaction
-router.delete(
-  "/:id",
-  authenticate,
-  checkPermissions(["deleteTransaction"]),
-  remove
+  checkPermissions(["transactions.get_customer"]),
+  customerTransactions
 );
 
 export default router;

@@ -1,20 +1,27 @@
-import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { STATUS_CODES } from "../helpers/constants.js";
+import { getSearchFilterQuery } from "../helpers/functions.js";
 import Transaction from "../models/transaction.model.js";
+import {
+  updateCustomerBalance,
+  updateBusinessStats,
+} from "../helpers/functions.js";
+import Customer from "../models/customer.model.js";
 
 export const create = async (req, res) => {
   try {
-    const { business_id, business_name } = req.user; // Get business info from authenticated user
+    const transaction = await Transaction.create(req.body);
 
-    // Add business reference to transaction data
-    const transactionData = {
-      ...req.body,
-      business: {
-        _id: business_id,
-        business_name: business_name,
-      },
-    };
+    await updateCustomerBalance(
+      transaction.customer._id,
+      transaction.amount,
+      transaction.transaction_type
+    );
 
-    const transaction = await Transaction.create(transactionData);
+    await updateBusinessStats(
+      transaction.business._id,
+      transaction.amount,
+      transaction.transaction_type
+    );
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
@@ -29,66 +36,58 @@ export const create = async (req, res) => {
 };
 
 export const transactions = async (req, res) => {
-  const { business_id } = req.user;
+  const { business } = req.user;
+
+  const { query: filter, sort } = getSearchFilterQuery(req.query.filter);
+
+  filter.$and.push({ "business._id": { $eq: business._id } });
+
+  try {
+    const transactions = await Transaction.find(filter).sort(sort);
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: {
+        transactions,
+      },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const customerTransactions = async (req, res) => {
+  const { business } = req.user;
+  const { customer_id } = req.params;
 
   try {
     const transactions = await Transaction.find({
-      "business._id": business_id,
+      "business._id": business._id,
+      "customer._id": customer_id,
     }).sort({ created_at: -1 });
 
-    return res.status(STATUS_CODES.SUCCESS).json({
-      success: true,
-      data: { transactions },
-    });
-  } catch (error) {
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+    const customer = await Customer.findById(customer_id);
+    const stats = customer?.transaction_stats || {
+      total_sent: 0,
+      total_received: 0,
+      total_transactions: 0,
+    };
 
-export const update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const transaction = await Transaction.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
-
-    if (!transaction) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({
-        success: false,
-        message: "Transaction not found",
-      });
-    }
+    const pending = stats.total_sent - stats.total_received;
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      transaction,
-    });
-  } catch (error) {
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const remove = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const transaction = await Transaction.findByIdAndDelete(id);
-
-    if (!transaction) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({
-        success: false,
-        message: "Transaction not found",
-      });
-    }
-
-    return res.status(STATUS_CODES.SUCCESS).json({
-      success: true,
-      message: "Transaction deleted successfully",
+      data: {
+        transactions,
+        total_sent: stats.total_sent,
+        total_received: stats.total_received,
+        pending,
+        total_transactions: stats.total_transactions,
+        customer_balance: customer?.balance || 0,
+      },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

@@ -7,23 +7,20 @@ const BusinessSchema = new mongoose.Schema(
       _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: false, // Made optional for business creation flow
+        required: false,
       },
-      first_name: {
+      name: {
         type: String,
-        required: false, // Made optional for business creation flow
-      },
-      last_name: {
-        type: String,
-        required: false, // Made optional for business creation flow
+        required: false,
       },
       phone: {
         type: String,
-        required: false, // Made optional for business creation flow
+        required: false,
       },
     },
     business_name: {
       type: String,
+      trim: true,
       required: true,
     },
     business_type: {
@@ -33,6 +30,7 @@ const BusinessSchema = new mongoose.Schema(
     },
     address: {
       type: String,
+      trim: true,
       required: true,
     },
     logo: {
@@ -40,11 +38,30 @@ const BusinessSchema = new mongoose.Schema(
     },
     gst_number: {
       type: String,
+      trim: true,
     },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
       default: STATUS.ACTIVE,
+    },
+    transaction_stats: {
+      total_sent: {
+        type: Number,
+        default: 0,
+      },
+      total_received: {
+        type: Number,
+        default: 0,
+      },
+      total_pending: {
+        type: Number,
+        default: 0,
+      },
+      total_transactions: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   {
