@@ -13,13 +13,7 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post(
-  "/",
-  authenticate,
-  checkPermissions(["business.create"]),
-  validate(createBusinessSchema),
-  create
-);
+router.post("/", validate(createBusinessSchema), create);
 
 router.get(
   "/",

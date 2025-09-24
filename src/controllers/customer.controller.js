@@ -1,24 +1,40 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import Customer from "../models/customer.model.js";
+import { updateBusinessStats } from "../helpers/functions.js";
+import Transaction from "../models/transaction.model.js";
 
 export const create = async (req, res) => {
   try {
-    const customer = await Customer.findOne({
-      phone: req.body.phone,
-      status: STATUS.ACTIVE,
-    });
+    const { phone } = req.body;
+
+    const customer = await Customer.findOne({ phone });
+
     if (customer) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({
-        success: false,
-        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
-      });
+      if (customer.status === STATUS.ACTIVE) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          success: false,
+          message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
+        });
+      }
+
+      if (customer.status === STATUS.DELETED) {
+        const updatedCustomer = await Customer.findByIdAndUpdate(
+          customer._id,
+          { status: STATUS.ACTIVE, balance: 0, transaction_stats: {} },
+          { new: true }
+        );
+
+        return res.status(STATUS_CODES.SUCCESS).json({
+          success: true,
+          customer: updatedCustomer,
+        });
+      }
     }
 
-    const response = await Customer.create(req.body);
-
+    const newCustomer = await Customer.create(req.body);
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      customer: response,
+      customer: newCustomer,
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -119,18 +135,46 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const { id } = req.params;
-    const customer = await Customer.findByIdAndUpdate(
+
+    const customer = await Customer.findOne({ _id: id, status: STATUS.ACTIVE });
+    if (!customer) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND,
+      });
+    }
+
+    const stats = customer.transaction_stats;
+    if (stats) {
+      if (stats.total_sent > 0) {
+        await updateBusinessStats(
+          customer.business._id,
+          stats.total_sent,
+          "sent",
+          "subtract"
+        );
+      }
+
+      if (stats.total_received > 0) {
+        await updateBusinessStats(
+          customer.business._id,
+          stats.total_received,
+          "received",
+          "subtract"
+        );
+      }
+    }
+
+    await Customer.findByIdAndUpdate(
       id,
       { status: STATUS.DELETED },
       { new: true }
     );
 
-    if (!customer) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({
-        success: false,
-        message: "Customer not found",
-      });
-    }
+    await Transaction.updateMany(
+      { "customer._id": id },
+      { status: STATUS.DELETED }
+    );
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,

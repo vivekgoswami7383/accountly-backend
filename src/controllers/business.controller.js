@@ -22,10 +22,6 @@ const Business = mongoose.model("Business");
 export const create = async (req, res) => {
   const {
     business_name,
-    business_type,
-    address,
-    logo,
-    gst_number,
     user: { name, phone, password },
   } = req.body;
 
@@ -57,10 +53,6 @@ export const create = async (req, res) => {
         phone,
       },
       business_name,
-      business_type,
-      address,
-      logo: logo || "",
-      gst_number: gst_number || "",
     });
 
     await User.updateOne(

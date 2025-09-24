@@ -25,13 +25,11 @@ const BusinessSchema = new mongoose.Schema(
     },
     business_type: {
       type: String,
-      enum: [BUSINESS_TYPES.KIRANA_SHOP, BUSINESS_TYPES.PAN_SHOP],
-      required: true,
+      enum: [BUSINESS_TYPES.PAN_SHOP],
     },
     address: {
       type: String,
       trim: true,
-      required: true,
     },
     logo: {
       type: String,

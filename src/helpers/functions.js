@@ -21,10 +21,7 @@ export const generateToken = async (userId, role) => {
       user_id: userId,
       role: role,
     },
-    env.APP_SECRET,
-    {
-      expiresIn: "24h",
-    }
+    env.APP_SECRET
   );
   return token;
 };

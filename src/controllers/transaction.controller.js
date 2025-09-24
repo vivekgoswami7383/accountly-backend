@@ -1,4 +1,4 @@
-import { STATUS_CODES } from "../helpers/constants.js";
+import { STATUS, STATUS_CODES } from "../helpers/constants.js";
 import { getSearchFilterQuery } from "../helpers/functions.js";
 import Transaction from "../models/transaction.model.js";
 import {
@@ -67,6 +67,7 @@ export const customerTransactions = async (req, res) => {
     const transactions = await Transaction.find({
       "business._id": business._id,
       "customer._id": customer_id,
+      status: { $ne: STATUS.DELETED },
     }).sort({ created_at: -1 });
 
     const customer = await Customer.findById(customer_id);

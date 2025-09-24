@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { STATUS } from "../helpers/constants.js";
 
 const TransactionSchema = new mongoose.Schema(
   {
@@ -35,6 +36,11 @@ const TransactionSchema = new mongoose.Schema(
       required: true,
     },
     description: { type: String },
+    status: {
+      type: Number,
+      enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
+      default: STATUS.ACTIVE,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
