@@ -46,6 +46,7 @@ const CustomerSchema = new mongoose.Schema(
     address: {
       type: String,
       trim: true,
+      default: "",
     },
     status: {
       type: Number,

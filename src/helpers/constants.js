@@ -35,6 +35,7 @@ export const MESSAGES = {
     BUSINESS_NOT_FOUND: "Business not found",
     CUSTOMER_ALREADY_EXISTS: "Customer already exists with this phone number",
     CUSTOMER_NOT_FOUND: "Customer not found",
+    TRANSACTION_NOT_FOUND: "Transaction not found",
   },
 };
 

@@ -7,11 +7,11 @@ const UserSchema = new mongoose.Schema(
       _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Business",
-        required: false,
+        default: null,
       },
       business_name: {
         type: String,
-        required: false,
+        default: null,
       },
     },
     name: {

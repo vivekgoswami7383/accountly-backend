@@ -1,4 +1,4 @@
-import { STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import { getSearchFilterQuery } from "../helpers/functions.js";
 import Transaction from "../models/transaction.model.js";
 import {
@@ -89,6 +89,128 @@ export const customerTransactions = async (req, res) => {
         total_transactions: stats.total_transactions,
         customer_balance: customer?.balance || 0,
       },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const transaction = async (req, res) => {
+  const { id } = req.params;
+
+  const transaction = await Transaction.findOne({
+    _id: id,
+    status: STATUS.ACTIVE,
+  });
+  if (!transaction) {
+    return res.status(STATUS_CODES.NOT_FOUND).json({
+      success: false,
+      message: MESSAGES.ERROR_MESSAGES.TRANSACTION_NOT_FOUND,
+    });
+  }
+
+  return res.status(STATUS_CODES.SUCCESS).json({
+    success: true,
+    transaction,
+  });
+};
+
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await Transaction.findOne({
+      _id: id,
+      status: STATUS.ACTIVE,
+    });
+
+    if (!existing) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.TRANSACTION_NOT_FOUND,
+      });
+    }
+
+    await updateCustomerBalance(
+      existing.customer._id,
+      existing.amount,
+      existing.transaction_type,
+      "subtract"
+    );
+
+    await updateBusinessStats(
+      existing.business._id,
+      existing.amount,
+      existing.transaction_type,
+      "subtract"
+    );
+
+    const updated = await Transaction.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+
+    await updateCustomerBalance(
+      updated.customer._id,
+      updated.amount,
+      updated.transaction_type,
+      "add"
+    );
+
+    await updateBusinessStats(
+      updated.business._id,
+      updated.amount,
+      updated.transaction_type,
+      "add"
+    );
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { transaction: updated },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const transaction = await Transaction.findOne({
+      _id: id,
+      status: STATUS.ACTIVE,
+    });
+    if (!transaction) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.TRANSACTION_NOT_FOUND,
+      });
+    }
+
+    await updateCustomerBalance(
+      transaction.customer._id,
+      transaction.amount,
+      transaction.transaction_type,
+      "subtract"
+    );
+
+    await updateBusinessStats(
+      transaction.business._id,
+      transaction.amount,
+      transaction.transaction_type,
+      "subtract"
+    );
+
+    await Transaction.findByIdAndUpdate(id, { status: STATUS.DELETED });
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

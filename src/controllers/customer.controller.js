@@ -114,12 +114,6 @@ export const update = async (req, res) => {
       new: true,
     });
 
-    console.log({
-      _id: { $ne: id },
-      phone: req.body.phone,
-      status: STATUS.ACTIVE,
-    });
-
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       customer: updatedCustomer,

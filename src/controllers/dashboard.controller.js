@@ -1,6 +1,7 @@
-import { STATUS_CODES, STATUS } from "../helpers/constants.js";
+import { STATUS_CODES, STATUS, MESSAGES } from "../helpers/constants.js";
 import Business from "../models/business.model.js";
 import Customer from "../models/customer.model.js";
+import Transaction from "../models/transaction.model.js";
 
 export const statistics = async (req, res) => {
   try {
@@ -11,7 +12,14 @@ export const statistics = async (req, res) => {
       status: STATUS.ACTIVE,
     });
 
-    const stats = business.transaction_stats || {
+    if (!business) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.BUSINESS_NOT_FOUND,
+      });
+    }
+
+    const stats = business?.transaction_stats || {
       total_sent: 0,
       total_received: 0,
       total_pending: 0,
@@ -19,6 +27,13 @@ export const statistics = async (req, res) => {
     };
 
     const customers = await Customer.find({
+      "business._id": business._id,
+      status: STATUS.ACTIVE,
+    })
+      .sort({ created_at: -1 })
+      .limit(3);
+
+    const transactions = await Transaction.find({
       "business._id": business._id,
       status: STATUS.ACTIVE,
     })
@@ -35,6 +50,7 @@ export const statistics = async (req, res) => {
           total_transactions: stats.total_transactions,
         },
         recent_customers: customers,
+        recent_transactions: transactions,
       },
     });
   } catch (error) {

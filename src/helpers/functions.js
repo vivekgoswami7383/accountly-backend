@@ -135,18 +135,21 @@ export const getSearchFilterQuery = (filter) => {
 export const updateCustomerBalance = async (
   customerId,
   amount,
-  transactionType
+  transactionType,
+  operation = "add"
 ) => {
-  const balanceChange = transactionType === "sent" ? -amount : amount;
+  const multiplier = operation === "add" ? 1 : -1;
+  const balanceChange =
+    transactionType === "sent" ? -amount * multiplier : amount * multiplier;
   const updates = {
     balance: balanceChange,
-    "transaction_stats.total_transactions": 1,
+    "transaction_stats.total_transactions": multiplier * 1,
   };
 
   if (transactionType === "sent") {
-    updates["transaction_stats.total_sent"] = amount;
+    updates["transaction_stats.total_sent"] = multiplier * amount;
   } else if (transactionType === "received") {
-    updates["transaction_stats.total_received"] = amount;
+    updates["transaction_stats.total_received"] = multiplier * amount;
   }
 
   await Customer.findByIdAndUpdate(customerId, {
