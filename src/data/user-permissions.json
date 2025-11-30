@@ -22,6 +22,7 @@
     "permissions": [
       "businesses.get",
       "business.update",
+      "user.update",
       "customer.create",
       "customers.get",
       "customer.update",

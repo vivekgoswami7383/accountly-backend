@@ -117,9 +117,20 @@ export const business = async (req, res) => {
       });
     }
 
+    const user = await User.findOne({
+      _id: business.user._id,
+      status: STATUS.ACTIVE,
+    }).select("-password");
+    if (!user) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.USER_NOT_FOUND,
+      });
+    }
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { business },
+      data: { business, user },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

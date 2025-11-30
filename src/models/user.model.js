@@ -36,6 +36,11 @@ const UserSchema = new mongoose.Schema(
       default: USER_ROLES.STAFF,
     },
     permissions: [String],
+    theme: {
+      type: String,
+      enum: ["light", "dark"],
+      default: "light",
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
