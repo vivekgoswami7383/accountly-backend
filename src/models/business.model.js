@@ -52,10 +52,6 @@ const BusinessSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
-      total_pending: {
-        type: Number,
-        default: 0,
-      },
       total_transactions: {
         type: Number,
         default: 0,

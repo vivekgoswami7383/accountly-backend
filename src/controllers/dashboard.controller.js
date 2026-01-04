@@ -22,7 +22,6 @@ export const statistics = async (req, res) => {
     const stats = business?.transaction_stats || {
       total_sent: 0,
       total_received: 0,
-      total_pending: 0,
       total_transactions: 0,
     };
 
@@ -46,7 +45,7 @@ export const statistics = async (req, res) => {
         stats: {
           total_sent: stats.total_sent,
           total_received: stats.total_received,
-          pending: stats.total_pending,
+          pending: stats.total_sent - stats.total_received,
           total_transactions: stats.total_transactions,
         },
         recent_customers: customers,

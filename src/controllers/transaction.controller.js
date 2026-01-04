@@ -64,29 +64,19 @@ export const customerTransactions = async (req, res) => {
   const { customer_id } = req.params;
 
   try {
-    const transactions = await Transaction.find({
-      "business._id": business._id,
-      "customer._id": customer_id,
-      status: { $ne: STATUS.DELETED },
-    }).sort({ created_at: -1 });
-
-    const customer = await Customer.findById(customer_id);
-    const stats = customer?.transaction_stats || {
-      total_sent: 0,
-      total_received: 0,
-      total_transactions: 0,
-    };
-
-    const pending = stats.total_sent - stats.total_received;
+    const [transactions, customer] = await Promise.all([
+      Transaction.find({
+        "business._id": business._id,
+        "customer._id": customer_id,
+        status: { $ne: STATUS.DELETED },
+      }).sort({ created_at: -1 }),
+      Customer.findById(customer_id),
+    ]);
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: {
         transactions,
-        total_sent: stats.total_sent,
-        total_received: stats.total_received,
-        pending,
-        total_transactions: stats.total_transactions,
         customer_balance: customer?.balance || 0,
       },
     });

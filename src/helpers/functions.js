@@ -141,19 +141,9 @@ export const updateCustomerBalance = async (
   const multiplier = operation === "add" ? 1 : -1;
   const balanceChange =
     transactionType === "sent" ? -amount * multiplier : amount * multiplier;
-  const updates = {
-    balance: balanceChange,
-    "transaction_stats.total_transactions": multiplier * 1,
-  };
-
-  if (transactionType === "sent") {
-    updates["transaction_stats.total_sent"] = multiplier * amount;
-  } else if (transactionType === "received") {
-    updates["transaction_stats.total_received"] = multiplier * amount;
-  }
 
   await Customer.findByIdAndUpdate(customerId, {
-    $inc: updates,
+    $inc: { balance: balanceChange },
   });
 };
 
@@ -170,10 +160,8 @@ export const updateBusinessStats = async (
 
   if (transactionType === "sent") {
     updates["transaction_stats.total_sent"] = multiplier * amount;
-    updates["transaction_stats.total_pending"] = multiplier * amount;
   } else if (transactionType === "received") {
     updates["transaction_stats.total_received"] = multiplier * amount;
-    updates["transaction_stats.total_pending"] = multiplier * -amount;
   }
 
   await Business.findByIdAndUpdate(businessId, {

@@ -29,8 +29,9 @@ app.get("/health", (req, res) => {
 
 databaseConnection()
   .then(() => {
-    app.listen(env.PORT, () => {
+    app.listen(env.PORT, "0.0.0.0", () => {
       logger.info(`Server is running on port ${env.PORT}`);
+      logger.info(`Server accessible at http://0.0.0.0:${env.PORT}`);
       logger.info(`✅ Connected to mongodb`);
     });
   })

@@ -28,20 +28,7 @@ const CustomerSchema = new mongoose.Schema(
     balance: {
       type: Number,
       default: 0,
-    },
-    transaction_stats: {
-      total_sent: {
-        type: Number,
-        default: 0,
-      },
-      total_received: {
-        type: Number,
-        default: 0,
-      },
-      total_transactions: {
-        type: Number,
-        default: 0,
-      },
+      comment: "Negative = customer owes you, Positive = you owe customer",
     },
     address: {
       type: String,

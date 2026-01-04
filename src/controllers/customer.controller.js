@@ -1,6 +1,5 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import Customer from "../models/customer.model.js";
-import { updateBusinessStats } from "../helpers/functions.js";
 import Transaction from "../models/transaction.model.js";
 
 export const create = async (req, res) => {
@@ -20,7 +19,7 @@ export const create = async (req, res) => {
       if (customer.status === STATUS.DELETED) {
         const updatedCustomer = await Customer.findByIdAndUpdate(
           customer._id,
-          { status: STATUS.ACTIVE, balance: 0, transaction_stats: {} },
+          { status: STATUS.ACTIVE, balance: 0 },
           { new: true }
         );
 
@@ -136,27 +135,6 @@ export const remove = async (req, res) => {
         success: false,
         message: MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND,
       });
-    }
-
-    const stats = customer.transaction_stats;
-    if (stats) {
-      if (stats.total_sent > 0) {
-        await updateBusinessStats(
-          customer.business._id,
-          stats.total_sent,
-          "sent",
-          "subtract"
-        );
-      }
-
-      if (stats.total_received > 0) {
-        await updateBusinessStats(
-          customer.business._id,
-          stats.total_received,
-          "received",
-          "subtract"
-        );
-      }
     }
 
     await Customer.findByIdAndUpdate(
