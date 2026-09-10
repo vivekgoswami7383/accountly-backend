@@ -23,7 +23,6 @@ const CustomerSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: true,
-      unique: true,
     },
     balance: {
       type: Number,
@@ -46,6 +45,8 @@ const CustomerSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
+
+CustomerSchema.index({ "business._id": 1, phone: 1 }, { unique: true });
 
 const Customer = mongoose.model("Customer", CustomerSchema);
 

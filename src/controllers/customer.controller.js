@@ -4,9 +4,12 @@ import Transaction from "../models/transaction.model.js";
 
 export const create = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, business } = req.body;
 
-    const customer = await Customer.findOne({ phone });
+    const customer = await Customer.findOne({
+      phone,
+      "business._id": business._id,
+    });
 
     if (customer) {
       if (customer.status === STATUS.ACTIVE) {
@@ -100,6 +103,7 @@ export const update = async (req, res) => {
     const existCustomer = await Customer.findOne({
       _id: { $ne: id },
       phone: req.body.phone,
+      "business._id": customer.business._id,
       status: STATUS.ACTIVE,
     });
     if (existCustomer) {
