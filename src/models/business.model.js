@@ -43,20 +43,6 @@ const BusinessSchema = new mongoose.Schema(
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
       default: STATUS.ACTIVE,
     },
-    transaction_stats: {
-      total_sent: {
-        type: Number,
-        default: 0,
-      },
-      total_received: {
-        type: Number,
-        default: 0,
-      },
-      total_transactions: {
-        type: Number,
-        default: 0,
-      },
-    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },

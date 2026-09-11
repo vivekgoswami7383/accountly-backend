@@ -5,6 +5,13 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (String(req.user._id) !== String(id)) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.RESPONSE_MESSAGES.FORBIDDEN,
+      });
+    }
+
     const user = await User.findOne({
       _id: id,
       status: STATUS.ACTIVE,
@@ -17,9 +24,14 @@ export const update = async (req, res) => {
       });
     }
 
-    const response = await User.findByIdAndUpdate(id, req.body, {
+    const patch = {};
+    if (req.body.name != null) patch.name = req.body.name;
+    if (req.body.phone != null) patch.phone = req.body.phone;
+    if (req.body.theme != null) patch.theme = req.body.theme;
+
+    const response = await User.findByIdAndUpdate(id, patch, {
       new: true,
-    });
+    }).select("-password");
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,

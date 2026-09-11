@@ -1,11 +1,8 @@
 import Joi from "joi";
 
 export const createCustomerSchema = Joi.object({
-  business: Joi.object({
-    _id: Joi.string().required(),
-    business_name: Joi.string().required(),
-  }).required(),
+  business: Joi.forbidden(),
   name: Joi.string().required(),
   phone: Joi.string().required(),
-  address: Joi.number().optional().allow(""),
-});
+  address: Joi.string().optional().allow(""),
+}).unknown(true);

@@ -1,5 +1,6 @@
 import { STATUS_CODES, STATUS, MESSAGES } from "../helpers/constants.js";
 import Business from "../models/business.model.js";
+import BusinessStats from "../models/business-stats.model.js";
 import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
 
@@ -19,34 +20,31 @@ export const statistics = async (req, res) => {
       });
     }
 
-    const stats = business?.transaction_stats || {
-      total_sent: 0,
-      total_received: 0,
-      total_transactions: 0,
-    };
+    const [stats, customers, transactions] = await Promise.all([
+      BusinessStats.findById(business._id),
+      Customer.find({ "business._id": business._id, status: STATUS.ACTIVE })
+        .sort({ updated_at: -1 })
+        .limit(3),
+      Transaction.find({
+        "business._id": business._id,
+        status: { $ne: STATUS.DELETED },
+      })
+        .sort({ created_at: -1 })
+        .limit(3),
+    ]);
 
-    const customers = await Customer.find({
-      "business._id": business._id,
-      status: STATUS.ACTIVE,
-    })
-      .sort({ created_at: -1 })
-      .limit(3);
-
-    const transactions = await Transaction.find({
-      "business._id": business._id,
-      status: STATUS.ACTIVE,
-    })
-      .sort({ created_at: -1 })
-      .limit(3);
+    const you_will_get = stats?.you_will_get || 0;
+    const you_will_give = stats?.you_will_give || 0;
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: {
         stats: {
-          total_sent: stats.total_sent,
-          total_received: stats.total_received,
-          pending: stats.total_sent - stats.total_received,
-          total_transactions: stats.total_transactions,
+          you_will_get,
+          you_will_give,
+          net: you_will_get - you_will_give,
+          customer_count: stats?.customer_count || 0,
+          total_transactions: stats?.total_transactions || 0,
         },
         recent_customers: customers,
         recent_transactions: transactions,

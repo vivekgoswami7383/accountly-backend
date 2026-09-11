@@ -18,6 +18,7 @@ const usersPermissions = JSON.parse(
 
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
+const BusinessStats = mongoose.model("BusinessStats");
 
 export const create = async (req, res) => {
   const {
@@ -55,6 +56,11 @@ export const create = async (req, res) => {
       business_name,
     });
 
+    await BusinessStats.create({
+      _id: business._id,
+      business_name,
+    });
+
     await User.updateOne(
       { _id: createUser._id },
       {
@@ -71,11 +77,15 @@ export const create = async (req, res) => {
       (usersPermission) => usersPermission.role === USER_ROLES.OWNER
     ).permissions;
 
-    await User.updateOne({ _id: createUser._id }, { $set: { permissions } });
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: createUser._id },
+      { $set: { permissions } },
+      { new: true }
+    ).select("-password");
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { business, user: createUser },
+      data: { business, user: updatedUser },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -105,6 +115,16 @@ export const businesses = async (req, res) => {
 export const business = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (
+      req.user.role !== USER_ROLES.SUPER_ADMIN &&
+      String(req.user.business._id) !== String(id)
+    ) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.RESPONSE_MESSAGES.FORBIDDEN,
+      });
+    }
 
     const business = await Business.findOne({
       _id: id,
@@ -144,7 +164,24 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const business = await Business.findByIdAndUpdate(id, req.body, {
+    if (
+      req.user.role !== USER_ROLES.SUPER_ADMIN &&
+      String(req.user.business._id) !== String(id)
+    ) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.RESPONSE_MESSAGES.FORBIDDEN,
+      });
+    }
+
+    const patch = {};
+    ["business_name", "business_type", "address", "logo", "gst_number"].forEach(
+      (field) => {
+        if (req.body[field] != null) patch[field] = req.body[field];
+      }
+    );
+
+    const business = await Business.findByIdAndUpdate(id, patch, {
       new: true,
     });
 
@@ -153,6 +190,13 @@ export const update = async (req, res) => {
         success: false,
         message: MESSAGES.ERROR_MESSAGES.BUSINESS_NOT_FOUND,
       });
+    }
+
+    if (patch.business_name) {
+      await BusinessStats.updateOne(
+        { _id: business._id },
+        { $set: { business_name: business.business_name } }
+      );
     }
 
     return res.status(STATUS_CODES.SUCCESS).json({
@@ -170,6 +214,16 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (
+      req.user.role !== USER_ROLES.SUPER_ADMIN &&
+      String(req.user.business._id) !== String(id)
+    ) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.RESPONSE_MESSAGES.FORBIDDEN,
+      });
+    }
 
     const business = await Business.findByIdAndUpdate(
       id,

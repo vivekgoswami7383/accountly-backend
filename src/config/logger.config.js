@@ -1,7 +1,6 @@
 import winston from "winston";
 
-const { combine, timestamp, errors, splat, json, colorize, printf } =
-  winston.format;
+const { combine, timestamp, errors, splat, colorize, printf } = winston.format;
 
 const consoleFormat = combine(
   colorize(),
@@ -13,20 +12,7 @@ const consoleFormat = combine(
   })
 );
 
-const fileFormat = combine(
-  timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-  errors({ stack: true }),
-  splat(),
-  json()
-);
-
 export const logger = winston.createLogger({
   level: "info",
-  transports: [
-    new winston.transports.Console({ format: consoleFormat }),
-    new winston.transports.File({
-      filename: "combined.log",
-      format: fileFormat,
-    }),
-  ],
+  transports: [new winston.transports.Console({ format: consoleFormat })],
 });

@@ -11,6 +11,18 @@ export const STATUS = {
   INACTIVE: 2,
 };
 
+export const TRANSACTION_TYPES = {
+  DEBIT: "debit",
+  CREDIT: "credit",
+};
+
+export const TRANSACTION_TYPE_ALIASES = {
+  debit: "debit",
+  credit: "credit",
+  sent: "debit",
+  received: "credit",
+};
+
 export const STATUS_CODES = {
   SUCCESS: 200,
   BAD_REQUEST: 400,
@@ -36,6 +48,8 @@ export const MESSAGES = {
     CUSTOMER_ALREADY_EXISTS: "Customer already exists with this phone number",
     CUSTOMER_NOT_FOUND: "Customer not found",
     TRANSACTION_NOT_FOUND: "Transaction not found",
+    INVALID_TRANSACTION_TYPE: "Transaction type must be debit or credit",
+    INVALID_AMOUNT: "Amount must be greater than zero",
   },
 };
 

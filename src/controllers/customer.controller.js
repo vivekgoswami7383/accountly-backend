@@ -1,10 +1,12 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
+import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
 
 export const create = async (req, res) => {
   try {
-    const { phone, business } = req.body;
+    const { business } = req.user;
+    const { phone, name, address } = req.body;
 
     const customer = await Customer.findOne({
       phone,
@@ -22,9 +24,11 @@ export const create = async (req, res) => {
       if (customer.status === STATUS.DELETED) {
         const updatedCustomer = await Customer.findByIdAndUpdate(
           customer._id,
-          { status: STATUS.ACTIVE, balance: 0 },
+          { status: STATUS.ACTIVE, balance: 0, name, address },
           { new: true }
         );
+
+        await adjustBusinessStats(business, { customer_count: 1 });
 
         return res.status(STATUS_CODES.SUCCESS).json({
           success: true,
@@ -33,7 +37,15 @@ export const create = async (req, res) => {
       }
     }
 
-    const newCustomer = await Customer.create(req.body);
+    const newCustomer = await Customer.create({
+      business: { _id: business._id, business_name: business.business_name },
+      name,
+      phone,
+      address,
+    });
+
+    await adjustBusinessStats(business, { customer_count: 1 });
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       customer: newCustomer,
@@ -89,9 +101,14 @@ export const customer = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
+    const { business } = req.user;
     const { id } = req.params;
 
-    const customer = await Customer.findOne({ _id: id, status: STATUS.ACTIVE });
+    const customer = await Customer.findOne({
+      _id: id,
+      "business._id": business._id,
+      status: STATUS.ACTIVE,
+    });
 
     if (!customer) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
@@ -100,20 +117,27 @@ export const update = async (req, res) => {
       });
     }
 
-    const existCustomer = await Customer.findOne({
-      _id: { $ne: id },
-      phone: req.body.phone,
-      "business._id": customer.business._id,
-      status: STATUS.ACTIVE,
-    });
-    if (existCustomer) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({
-        success: false,
-        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
+    if (req.body.phone) {
+      const existCustomer = await Customer.findOne({
+        _id: { $ne: id },
+        phone: req.body.phone,
+        "business._id": customer.business._id,
+        status: STATUS.ACTIVE,
       });
+      if (existCustomer) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          success: false,
+          message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
+        });
+      }
     }
 
-    const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
+    const patch = {};
+    if (req.body.name != null) patch.name = req.body.name;
+    if (req.body.phone != null) patch.phone = req.body.phone;
+    if (req.body.address != null) patch.address = req.body.address;
+
+    const updatedCustomer = await Customer.findByIdAndUpdate(id, patch, {
       new: true,
     });
 
@@ -131,15 +155,25 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
+    const { business } = req.user;
     const { id } = req.params;
 
-    const customer = await Customer.findOne({ _id: id, status: STATUS.ACTIVE });
+    const customer = await Customer.findOne({
+      _id: id,
+      "business._id": business._id,
+      status: STATUS.ACTIVE,
+    });
     if (!customer) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
         message: MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND,
       });
     }
+
+    const activeTransactionCount = await Transaction.countDocuments({
+      "customer._id": id,
+      status: STATUS.ACTIVE,
+    });
 
     await Customer.findByIdAndUpdate(
       id,
@@ -148,9 +182,17 @@ export const remove = async (req, res) => {
     );
 
     await Transaction.updateMany(
-      { "customer._id": id },
+      { "customer._id": id, status: STATUS.ACTIVE },
       { status: STATUS.DELETED }
     );
+
+    const before = balanceBucket(customer.balance);
+    await adjustBusinessStats(business, {
+      you_will_get: -before.get,
+      you_will_give: -before.give,
+      customer_count: -1,
+      total_transactions: -activeTransactionCount,
+    });
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,

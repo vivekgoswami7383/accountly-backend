@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { STATUS } from "../helpers/constants.js";
+import { STATUS, TRANSACTION_TYPES } from "../helpers/constants.js";
 
 const TransactionSchema = new mongoose.Schema(
   {
@@ -29,13 +29,13 @@ const TransactionSchema = new mongoose.Schema(
       type: String,
       enum: ["cash", "upi", "bank", "other"],
     },
-    amount: { type: Number, required: true },
+    amount: { type: Number, required: true, min: 0 },
     transaction_type: {
       type: String,
-      enum: ["sent", "received"],
+      enum: [TRANSACTION_TYPES.DEBIT, TRANSACTION_TYPES.CREDIT],
       required: true,
     },
-    description: { type: String },
+    description: { type: String, default: "" },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
@@ -47,6 +47,9 @@ const TransactionSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
+
+TransactionSchema.index({ "customer._id": 1, status: 1, created_at: 1 });
+TransactionSchema.index({ "business._id": 1, status: 1, created_at: -1 });
 
 const Transaction = mongoose.model("Transaction", TransactionSchema);
 

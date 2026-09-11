@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import { env } from "../config/env.config.js";
 import { logger } from "../config/logger.config.js";
 import Customer from "../models/customer.model.js";
-import Business from "../models/business.model.js";
+import Transaction from "../models/transaction.model.js";
+import BusinessStats from "../models/business-stats.model.js";
+import { STATUS, TRANSACTION_TYPE_ALIASES } from "./constants.js";
 
 export const hashPassword = async (password) => {
   const hash = await bcrypt.hash(password, 10);
@@ -132,39 +135,79 @@ export const getSearchFilterQuery = (filter) => {
   return { query: { $and: filters }, sort };
 };
 
-export const updateCustomerBalance = async (
-  customerId,
-  amount,
-  transactionType,
-  operation = "add"
-) => {
-  const multiplier = operation === "add" ? 1 : -1;
-  const balanceChange =
-    transactionType === "sent" ? -amount * multiplier : amount * multiplier;
-
-  await Customer.findByIdAndUpdate(customerId, {
-    $inc: { balance: balanceChange },
-  });
+export const normalizeTransactionType = (value) => {
+  return TRANSACTION_TYPE_ALIASES[String(value ?? "").toLowerCase()] || null;
 };
 
-export const updateBusinessStats = async (
-  businessId,
-  amount,
-  transactionType,
-  operation = "add"
-) => {
-  const multiplier = operation === "add" ? 1 : -1;
-  const updates = {
-    "transaction_stats.total_transactions": multiplier * 1,
-  };
+export const balanceBucket = (balance) => ({
+  get: balance < 0 ? -balance : 0,
+  give: balance > 0 ? balance : 0,
+});
 
-  if (transactionType === "sent") {
-    updates["transaction_stats.total_sent"] = multiplier * amount;
-  } else if (transactionType === "received") {
-    updates["transaction_stats.total_received"] = multiplier * amount;
+export const adjustBusinessStats = async (business, delta) => {
+  await BusinessStats.findByIdAndUpdate(
+    business._id,
+    {
+      $inc: delta,
+      $set: { business_name: business.business_name },
+    },
+    { upsert: true }
+  );
+};
+
+export const recomputeCustomerBalance = async (
+  customerId,
+  { transactionCountDelta = 0 } = {}
+) => {
+  const customer = await Customer.findById(customerId);
+  const oldBalance = customer?.balance || 0;
+
+  const [totals] = await Transaction.aggregate([
+    {
+      $match: {
+        "customer._id": new mongoose.Types.ObjectId(String(customerId)),
+        status: { $ne: STATUS.DELETED },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        credit: {
+          $sum: {
+            $cond: [
+              { $in: ["$transaction_type", ["credit", "received"]] },
+              "$amount",
+              0,
+            ],
+          },
+        },
+        debit: {
+          $sum: {
+            $cond: [
+              { $in: ["$transaction_type", ["debit", "sent"]] },
+              "$amount",
+              0,
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  const newBalance = (totals?.credit || 0) - (totals?.debit || 0);
+
+  await Customer.findByIdAndUpdate(customerId, { balance: newBalance });
+
+  if (customer?.business?._id) {
+    const before = balanceBucket(oldBalance);
+    const after = balanceBucket(newBalance);
+
+    await adjustBusinessStats(customer.business, {
+      you_will_get: after.get - before.get,
+      you_will_give: after.give - before.give,
+      total_transactions: transactionCountDelta,
+    });
   }
 
-  await Business.findByIdAndUpdate(businessId, {
-    $inc: updates,
-  });
+  return newBalance;
 };
