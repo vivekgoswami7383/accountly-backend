@@ -3,16 +3,10 @@ import { STATUS } from "../helpers/constants.js";
 
 const CustomerSchema = new mongoose.Schema(
   {
-    business: {
-      _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Business",
-        required: true,
-      },
-      business_name: {
-        type: String,
-        required: true,
-      },
+    business_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Business",
+      required: true,
     },
     name: {
       type: String,
@@ -45,7 +39,7 @@ const CustomerSchema = new mongoose.Schema(
   }
 );
 
-CustomerSchema.index({ "business._id": 1, phone: 1 }, { unique: true });
+CustomerSchema.index({ business_id: 1, phone: 1 }, { unique: true });
 
 const Customer = mongoose.model("Customer", CustomerSchema);
 

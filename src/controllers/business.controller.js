@@ -19,8 +19,6 @@ const usersPermissions = JSON.parse(
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
 const BusinessStats = mongoose.model("BusinessStats");
-const Customer = mongoose.model("Customer");
-const Transaction = mongoose.model("Transaction");
 
 export const create = async (req, res) => {
   const {
@@ -59,18 +57,14 @@ export const create = async (req, res) => {
     });
 
     await BusinessStats.create({
-      _id: business._id,
-      business_name,
+      business_id: business._id,
     });
 
     await User.updateOne(
       { _id: createUser._id },
       {
         $set: {
-          business: {
-            _id: business._id,
-            business_name: business_name,
-          },
+          business_id: business._id,
         },
       }
     );
@@ -120,7 +114,7 @@ export const business = async (req, res) => {
 
     if (
       req.user.role !== USER_ROLES.SUPER_ADMIN &&
-      String(req.user.business._id) !== String(id)
+      String(req.user.business_id) !== String(id)
     ) {
       return res.status(STATUS_CODES.FORBIDDEN).json({
         success: false,
@@ -168,7 +162,7 @@ export const update = async (req, res) => {
 
     if (
       req.user.role !== USER_ROLES.SUPER_ADMIN &&
-      String(req.user.business._id) !== String(id)
+      String(req.user.business_id) !== String(id)
     ) {
       return res.status(STATUS_CODES.FORBIDDEN).json({
         success: false,
@@ -199,27 +193,6 @@ export const update = async (req, res) => {
       });
     }
 
-    if (patch.business_name) {
-      await Promise.all([
-        BusinessStats.updateOne(
-          { _id: business._id },
-          { $set: { business_name: business.business_name } }
-        ),
-        User.updateMany(
-          { "business._id": business._id },
-          { $set: { "business.business_name": business.business_name } }
-        ),
-        Customer.updateMany(
-          { "business._id": business._id },
-          { $set: { "business.business_name": business.business_name } }
-        ),
-        Transaction.updateMany(
-          { "business._id": business._id },
-          { $set: { "business.business_name": business.business_name } }
-        ),
-      ]);
-    }
-
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: { business },
@@ -238,7 +211,7 @@ export const remove = async (req, res) => {
 
     if (
       req.user.role !== USER_ROLES.SUPER_ADMIN &&
-      String(req.user.business._id) !== String(id)
+      String(req.user.business_id) !== String(id)
     ) {
       return res.status(STATUS_CODES.FORBIDDEN).json({
         success: false,

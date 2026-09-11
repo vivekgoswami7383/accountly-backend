@@ -3,16 +3,10 @@ import { STATUS, USER_ROLES } from "../helpers/constants.js";
 
 const UserSchema = new mongoose.Schema(
   {
-    business: {
-      _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Business",
-        default: null,
-      },
-      business_name: {
-        type: String,
-        default: null,
-      },
+    business_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Business",
+      default: null,
     },
     name: {
       type: String,

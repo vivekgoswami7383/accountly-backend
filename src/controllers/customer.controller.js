@@ -5,12 +5,12 @@ import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
 
 export const create = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { phone, name, address } = req.body;
 
     const customer = await Customer.findOne({
       phone,
-      "business._id": business._id,
+      business_id,
     });
 
     if (customer) {
@@ -28,7 +28,7 @@ export const create = async (req, res) => {
           { new: true }
         );
 
-        await adjustBusinessStats(business, { customer_count: 1 });
+        await adjustBusinessStats(business_id, { customer_count: 1 });
 
         return res.status(STATUS_CODES.SUCCESS).json({
           success: true,
@@ -38,13 +38,13 @@ export const create = async (req, res) => {
     }
 
     const newCustomer = await Customer.create({
-      business: { _id: business._id, business_name: business.business_name },
+      business_id,
       name,
       phone,
       address,
     });
 
-    await adjustBusinessStats(business, { customer_count: 1 });
+    await adjustBusinessStats(business_id, { customer_count: 1 });
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
@@ -59,11 +59,11 @@ export const create = async (req, res) => {
 };
 
 export const customers = async (req, res) => {
-  const { business } = req.user;
+  const { business_id } = req.user;
 
   try {
     const customers = await Customer.find({
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     }).sort({ created_at: -1 });
     return res.status(STATUS_CODES.SUCCESS).json({
@@ -79,12 +79,12 @@ export const customers = async (req, res) => {
 };
 
 export const customer = async (req, res) => {
-  const { business } = req.user;
+  const { business_id } = req.user;
 
   try {
     const customer = await Customer.findOne({
       _id: req.params.id,
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     });
     return res.status(STATUS_CODES.SUCCESS).json({
@@ -101,12 +101,12 @@ export const customer = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { id } = req.params;
 
     const customer = await Customer.findOne({
       _id: id,
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     });
 
@@ -121,7 +121,7 @@ export const update = async (req, res) => {
       const existCustomer = await Customer.findOne({
         _id: { $ne: id },
         phone: req.body.phone,
-        "business._id": customer.business._id,
+        business_id: customer.business_id,
         status: STATUS.ACTIVE,
       });
       if (existCustomer) {
@@ -155,12 +155,12 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { id } = req.params;
 
     const customer = await Customer.findOne({
       _id: id,
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     });
     if (!customer) {
@@ -187,9 +187,9 @@ export const remove = async (req, res) => {
     );
 
     const before = balanceBucket(customer.balance);
-    await adjustBusinessStats(business, {
-      you_will_get: -before.get,
-      you_will_give: -before.give,
+    await adjustBusinessStats(business_id, {
+      receivable: -before.get,
+      payable: -before.give,
       customer_count: -1,
       total_transactions: -activeTransactionCount,
     });

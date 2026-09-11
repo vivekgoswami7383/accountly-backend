@@ -3,16 +3,10 @@ import { STATUS, TRANSACTION_TYPES } from "../helpers/constants.js";
 
 const TransactionSchema = new mongoose.Schema(
   {
-    business: {
-      _id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Business",
-        required: true,
-      },
-      business_name: {
-        type: String,
-        required: true,
-      },
+    business_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Business",
+      required: true,
     },
     customer: {
       _id: {
@@ -49,7 +43,7 @@ const TransactionSchema = new mongoose.Schema(
 );
 
 TransactionSchema.index({ "customer._id": 1, status: 1, created_at: 1 });
-TransactionSchema.index({ "business._id": 1, status: 1, created_at: -1 });
+TransactionSchema.index({ business_id: 1, status: 1, created_at: -1 });
 
 const Transaction = mongoose.model("Transaction", TransactionSchema);
 

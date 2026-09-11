@@ -9,7 +9,7 @@ import Customer from "../models/customer.model.js";
 
 export const create = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { customer, amount, description, payment_mode } = req.body;
 
     const transaction_type = normalizeTransactionType(
@@ -31,7 +31,7 @@ export const create = async (req, res) => {
 
     const customerDoc = await Customer.findOne({
       _id: customer?._id,
-      "business._id": business._id,
+      business_id,
       status: { $ne: STATUS.DELETED },
     });
 
@@ -43,7 +43,7 @@ export const create = async (req, res) => {
     }
 
     const transaction = await Transaction.create({
-      business: { _id: business._id, business_name: business.business_name },
+      business_id,
       customer: { _id: customerDoc._id, name: customerDoc.name },
       amount,
       transaction_type,
@@ -68,11 +68,11 @@ export const create = async (req, res) => {
 };
 
 export const transactions = async (req, res) => {
-  const { business } = req.user;
+  const { business_id } = req.user;
 
   const { query: filter, sort } = getSearchFilterQuery(req.query.filter);
 
-  filter.$and.push({ "business._id": { $eq: business._id } });
+  filter.$and.push({ business_id: { $eq: business_id } });
 
   try {
     const transactions = await Transaction.find(filter).sort(sort);
@@ -92,19 +92,19 @@ export const transactions = async (req, res) => {
 };
 
 export const customerTransactions = async (req, res) => {
-  const { business } = req.user;
+  const { business_id } = req.user;
   const { customer_id } = req.params;
 
   try {
     const [transactions, customer] = await Promise.all([
       Transaction.find({
-        "business._id": business._id,
+        business_id,
         "customer._id": customer_id,
         status: { $ne: STATUS.DELETED },
       }).sort({ created_at: 1 }),
       Customer.findOne({
         _id: customer_id,
-        "business._id": business._id,
+        business_id,
       }),
     ]);
 
@@ -147,12 +147,12 @@ export const customerTransactions = async (req, res) => {
 };
 
 export const transaction = async (req, res) => {
-  const { business } = req.user;
+  const { business_id } = req.user;
   const { id } = req.params;
 
   const transaction = await Transaction.findOne({
     _id: id,
-    "business._id": business._id,
+    business_id,
     status: STATUS.ACTIVE,
   });
   if (!transaction) {
@@ -170,12 +170,12 @@ export const transaction = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { id } = req.params;
 
     const existing = await Transaction.findOne({
       _id: id,
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     });
 
@@ -236,12 +236,12 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    const { business } = req.user;
+    const { business_id } = req.user;
     const { id } = req.params;
 
     const transaction = await Transaction.findOne({
       _id: id,
-      "business._id": business._id,
+      business_id,
       status: STATUS.ACTIVE,
     });
     if (!transaction) {

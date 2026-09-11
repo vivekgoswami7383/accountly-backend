@@ -63,7 +63,7 @@ export const me = async (req, res) => {
     }
 
     const business = await Business.findOne({
-      _id: user.business._id,
+      _id: user.business_id,
     }).lean();
 
     return res.status(STATUS_CODES.SUCCESS).json({

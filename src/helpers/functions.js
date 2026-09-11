@@ -144,12 +144,11 @@ export const balanceBucket = (balance) => ({
   give: balance > 0 ? balance : 0,
 });
 
-export const adjustBusinessStats = async (business, delta) => {
-  await BusinessStats.findByIdAndUpdate(
-    business._id,
+export const adjustBusinessStats = async (businessId, delta) => {
+  await BusinessStats.findOneAndUpdate(
+    { business_id: businessId },
     {
       $inc: delta,
-      $set: { business_name: business.business_name },
     },
     { upsert: true }
   );
@@ -198,13 +197,13 @@ export const recomputeCustomerBalance = async (
 
   await Customer.findByIdAndUpdate(customerId, { balance: newBalance });
 
-  if (customer?.business?._id) {
+  if (customer?.business_id) {
     const before = balanceBucket(oldBalance);
     const after = balanceBucket(newBalance);
 
-    await adjustBusinessStats(customer.business, {
-      you_will_get: after.get - before.get,
-      you_will_give: after.give - before.give,
+    await adjustBusinessStats(customer.business_id, {
+      receivable: after.get - before.get,
+      payable: after.give - before.give,
       total_transactions: transactionCountDelta,
     });
   }

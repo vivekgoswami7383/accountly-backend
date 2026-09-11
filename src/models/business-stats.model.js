@@ -2,18 +2,17 @@ import mongoose from "mongoose";
 
 const BusinessStatsSchema = new mongoose.Schema(
   {
-    _id: {
+    business_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
+      required: true,
+      unique: true,
     },
-    business_name: {
-      type: String,
-    },
-    you_will_get: {
+    receivable: {
       type: Number,
       default: 0,
     },
-    you_will_give: {
+    payable: {
       type: Number,
       default: 0,
     },
