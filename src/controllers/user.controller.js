@@ -28,6 +28,7 @@ export const update = async (req, res) => {
     if (req.body.name != null) patch.name = req.body.name;
     if (req.body.phone != null) patch.phone = req.body.phone;
     if (req.body.theme != null) patch.theme = req.body.theme;
+    if (req.body.language != null) patch.language = req.body.language;
 
     const response = await User.findByIdAndUpdate(id, patch, {
       new: true,

@@ -38,6 +38,12 @@ const BusinessSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    currency: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      default: "INR",
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],

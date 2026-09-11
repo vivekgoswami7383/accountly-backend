@@ -177,11 +177,16 @@ export const update = async (req, res) => {
     }
 
     const patch = {};
-    ["business_name", "business_type", "address", "logo", "gst_number"].forEach(
-      (field) => {
-        if (req.body[field] != null) patch[field] = req.body[field];
-      }
-    );
+    [
+      "business_name",
+      "business_type",
+      "address",
+      "logo",
+      "gst_number",
+      "currency",
+    ].forEach((field) => {
+      if (req.body[field] != null) patch[field] = req.body[field];
+    });
 
     const business = await Business.findByIdAndUpdate(id, patch, {
       new: true,

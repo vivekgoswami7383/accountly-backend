@@ -39,7 +39,12 @@ const UserSchema = new mongoose.Schema(
     theme: {
       type: String,
       enum: ["light", "dark"],
-      default: "light",
+      default: "dark",
+    },
+    language: {
+      type: String,
+      enum: ["en", "hi", "gu", "hi-latn", "gu-latn"],
+      default: "en",
     },
     status: {
       type: Number,

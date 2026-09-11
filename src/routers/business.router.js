@@ -8,7 +8,10 @@ import {
 } from "../controllers/business.controller.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
 import { validate } from "../middlewares/validate.js";
-import { createBusinessSchema } from "../validations/business.validations.js";
+import {
+  createBusinessSchema,
+  updateBusinessSchema,
+} from "../validations/business.validations.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -29,7 +32,13 @@ router.get(
   business
 );
 
-router.put("/:id", authenticate, checkPermissions(["business.update"]), update);
+router.put(
+  "/:id",
+  authenticate,
+  checkPermissions(["business.update"]),
+  validate(updateBusinessSchema),
+  update
+);
 
 router.delete(
   "/:id",
