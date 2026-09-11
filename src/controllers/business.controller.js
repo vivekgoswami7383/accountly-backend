@@ -19,6 +19,8 @@ const usersPermissions = JSON.parse(
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
 const BusinessStats = mongoose.model("BusinessStats");
+const Customer = mongoose.model("Customer");
+const Transaction = mongoose.model("Transaction");
 
 export const create = async (req, res) => {
   const {
@@ -193,10 +195,24 @@ export const update = async (req, res) => {
     }
 
     if (patch.business_name) {
-      await BusinessStats.updateOne(
-        { _id: business._id },
-        { $set: { business_name: business.business_name } }
-      );
+      await Promise.all([
+        BusinessStats.updateOne(
+          { _id: business._id },
+          { $set: { business_name: business.business_name } }
+        ),
+        User.updateMany(
+          { "business._id": business._id },
+          { $set: { "business.business_name": business.business_name } }
+        ),
+        Customer.updateMany(
+          { "business._id": business._id },
+          { $set: { "business.business_name": business.business_name } }
+        ),
+        Transaction.updateMany(
+          { "business._id": business._id },
+          { $set: { "business.business_name": business.business_name } }
+        ),
+      ]);
     }
 
     return res.status(STATUS_CODES.SUCCESS).json({
