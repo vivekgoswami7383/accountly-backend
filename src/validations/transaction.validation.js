@@ -14,4 +14,5 @@ export const createTransactionSchema = Joi.object({
     .valid("debit", "credit", "sent", "received"),
   payment_mode: Joi.string().valid("cash", "upi", "bank", "other").optional(),
   description: Joi.string().optional().allow(""),
+  transaction_date: Joi.date().iso().max("now").optional(),
 }).unknown(true);

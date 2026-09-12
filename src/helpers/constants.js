@@ -50,6 +50,7 @@ export const MESSAGES = {
     TRANSACTION_NOT_FOUND: "Transaction not found",
     INVALID_TRANSACTION_TYPE: "Transaction type must be debit or credit",
     INVALID_AMOUNT: "Amount must be greater than zero",
+    INVALID_TRANSACTION_DATE: "Transaction date is invalid",
   },
 };
 

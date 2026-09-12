@@ -10,7 +10,8 @@ import Customer from "../models/customer.model.js";
 export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const { customer, amount, description, payment_mode } = req.body;
+    const { customer, amount, description, payment_mode, transaction_date } =
+      req.body;
 
     const transaction_type = normalizeTransactionType(
       req.body.transaction_type
@@ -49,6 +50,7 @@ export const create = async (req, res) => {
       transaction_type,
       payment_mode,
       description: description || "",
+      ...(transaction_date ? { created_at: new Date(transaction_date) } : {}),
     });
 
     const customer_balance = await recomputeCustomerBalance(customerDoc._id, {
@@ -69,12 +71,35 @@ export const create = async (req, res) => {
 
 export const transactions = async (req, res) => {
   const { business_id } = req.user;
+  const { page, limit } = req.query;
 
   const { query: filter, sort } = getSearchFilterQuery(req.query.filter);
 
   filter.$and.push({ business_id: { $eq: business_id } });
 
   try {
+    if (page || limit) {
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 20));
+
+      const [transactions, total] = await Promise.all([
+        Transaction.find(filter)
+          .sort(sort)
+          .skip((pageNum - 1) * limitNum)
+          .limit(limitNum),
+        Transaction.countDocuments(filter),
+      ]);
+
+      return res.status(STATUS_CODES.SUCCESS).json({
+        success: true,
+        data: {
+          transactions,
+          total,
+          has_more: (pageNum - 1) * limitNum + transactions.length < total,
+        },
+      });
+    }
+
     const transactions = await Transaction.find(filter).sort(sort);
 
     return res.status(STATUS_CODES.SUCCESS).json({
@@ -212,11 +237,31 @@ export const update = async (req, res) => {
     }
 
     if (req.body.description != null) patch.description = req.body.description;
-    if (req.body.payment_mode != null) patch.payment_mode = req.body.payment_mode;
+    if (req.body.payment_mode != null)
+      patch.payment_mode = req.body.payment_mode;
+    if (req.body.transaction_date != null) {
+      const parsedDate = new Date(req.body.transaction_date);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          success: false,
+          message: MESSAGES.ERROR_MESSAGES.INVALID_TRANSACTION_DATE,
+        });
+      }
+      patch.created_at = parsedDate;
+    }
 
-    const updated = await Transaction.findByIdAndUpdate(id, patch, {
-      new: true,
-    });
+    const updateOptions = { new: true };
+    if (patch.created_at) {
+      updateOptions.timestamps = false;
+      updateOptions.overwriteImmutable = true;
+      patch.updated_at = new Date();
+    }
+
+    const updated = await Transaction.findByIdAndUpdate(
+      id,
+      patch,
+      updateOptions
+    );
 
     const customer_balance = await recomputeCustomerBalance(
       updated.customer._id

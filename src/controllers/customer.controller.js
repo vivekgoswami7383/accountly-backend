@@ -60,12 +60,34 @@ export const create = async (req, res) => {
 
 export const customers = async (req, res) => {
   const { business_id } = req.user;
+  const { page, limit } = req.query;
 
   try {
-    const customers = await Customer.find({
-      business_id,
-      status: STATUS.ACTIVE,
-    }).sort({ created_at: -1 });
+    const baseFilter = { business_id, status: STATUS.ACTIVE };
+
+    if (page || limit) {
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 20));
+
+      const [customers, total] = await Promise.all([
+        Customer.find(baseFilter)
+          .sort({ created_at: -1 })
+          .skip((pageNum - 1) * limitNum)
+          .limit(limitNum),
+        Customer.countDocuments(baseFilter),
+      ]);
+
+      return res.status(STATUS_CODES.SUCCESS).json({
+        success: true,
+        data: {
+          customers,
+          total,
+          has_more: (pageNum - 1) * limitNum + customers.length < total,
+        },
+      });
+    }
+
+    const customers = await Customer.find(baseFilter).sort({ created_at: -1 });
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: { customers },
