@@ -14,7 +14,15 @@
       "transaction.create",
       "transactions.get",
       "transaction.update",
-      "transaction.delete"
+      "transaction.delete",
+      "expense.create",
+      "expenses.get",
+      "expense.update",
+      "expense.delete",
+      "note.create",
+      "notes.get",
+      "note.update",
+      "note.delete"
     ]
   },
   {
@@ -31,7 +39,15 @@
       "transactions.get_customer",
       "transactions.get",
       "transaction.update",
-      "transaction.delete"
+      "transaction.delete",
+      "expense.create",
+      "expenses.get",
+      "expense.update",
+      "expense.delete",
+      "note.create",
+      "notes.get",
+      "note.update",
+      "note.delete"
     ]
   },
   {
@@ -44,11 +60,31 @@
       "transaction.create",
       "transactions.get",
       "transaction.update",
-      "transaction.delete"
+      "transaction.delete",
+      "expense.create",
+      "expenses.get",
+      "expense.update",
+      "expense.delete",
+      "note.create",
+      "notes.get",
+      "note.update",
+      "note.delete"
     ]
   },
   {
     "role": "staff",
-    "permissions": ["customers.get", "transaction.create", "transactions.get"]
+    "permissions": [
+      "customers.get",
+      "transaction.create",
+      "transactions.get",
+      "expense.create",
+      "expenses.get",
+      "expense.update",
+      "expense.delete",
+      "note.create",
+      "notes.get",
+      "note.update",
+      "note.delete"
+    ]
   }
 ]

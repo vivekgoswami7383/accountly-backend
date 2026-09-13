@@ -23,6 +23,15 @@ export const TRANSACTION_TYPE_ALIASES = {
   received: "credit",
 };
 
+export const EXPENSE_CATEGORIES = {
+  FOOD: "food",
+  TRAVEL: "travel",
+  RENT: "rent",
+  UTILITIES: "utilities",
+  SHOPPING: "shopping",
+  OTHER: "other",
+};
+
 export const STATUS_CODES = {
   SUCCESS: 200,
   BAD_REQUEST: 400,
@@ -51,6 +60,10 @@ export const MESSAGES = {
     INVALID_TRANSACTION_TYPE: "Transaction type must be debit or credit",
     INVALID_AMOUNT: "Amount must be greater than zero",
     INVALID_TRANSACTION_DATE: "Transaction date is invalid",
+    EXPENSE_NOT_FOUND: "Expense not found",
+    INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
+    INVALID_EXPENSE_DATE: "Expense date is invalid",
+    NOTE_NOT_FOUND: "Note not found",
   },
 };
 
