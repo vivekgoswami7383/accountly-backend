@@ -6,6 +6,7 @@ import {
   update,
   remove,
   transaction,
+  report,
 } from "../controllers/transaction.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
@@ -27,6 +28,13 @@ router.get(
   authenticate,
   checkPermissions(["transactions.get"]),
   transactions
+);
+
+router.get(
+  "/report",
+  authenticate,
+  checkPermissions(["transactions.get"]),
+  report
 );
 
 router.get(

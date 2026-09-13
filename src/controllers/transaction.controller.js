@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import {
   getSearchFilterQuery,
@@ -161,6 +162,111 @@ export const customerTransactions = async (req, res) => {
         transactions: withBalance,
         total_transactions: withBalance.length,
         customer_balance: customer.balance,
+      },
+    });
+  } catch (error) {
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const report = async (req, res) => {
+  try {
+    const { business_id } = req.user;
+    const { start, end } = req.query;
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (!start || !end || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.RESPONSE_MESSAGES.INVALID_REQUEST,
+      });
+    }
+
+    const businessObjectId = new mongoose.Types.ObjectId(String(business_id));
+
+    const [txResult, topCustomers] = await Promise.all([
+      Transaction.aggregate([
+        {
+          $match: {
+            business_id: businessObjectId,
+            status: { $ne: STATUS.DELETED },
+            created_at: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $facet: {
+            totals: [
+              {
+                $group: {
+                  _id: null,
+                  collected: {
+                    $sum: {
+                      $cond: [{ $in: ["$transaction_type", ["credit", "received"]] }, "$amount", 0],
+                    },
+                  },
+                  given: {
+                    $sum: {
+                      $cond: [{ $in: ["$transaction_type", ["debit", "sent"]] }, "$amount", 0],
+                    },
+                  },
+                  transaction_count: { $sum: 1 },
+                },
+              },
+            ],
+            daily: [
+              {
+                $group: {
+                  _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at", timezone: "Asia/Kolkata" } },
+                  collected: {
+                    $sum: {
+                      $cond: [{ $in: ["$transaction_type", ["credit", "received"]] }, "$amount", 0],
+                    },
+                  },
+                  given: {
+                    $sum: {
+                      $cond: [{ $in: ["$transaction_type", ["debit", "sent"]] }, "$amount", 0],
+                    },
+                  },
+                },
+              },
+              { $sort: { _id: 1 } },
+            ],
+          },
+        },
+      ]),
+      Customer.aggregate([
+        { $match: { business_id: businessObjectId, status: { $ne: STATUS.DELETED } } },
+        { $addFields: { absBalance: { $abs: "$balance" } } },
+        { $match: { absBalance: { $gt: 0 } } },
+        { $sort: { absBalance: -1 } },
+        { $limit: 5 },
+        { $project: { name: 1, phone: 1, balance: 1 } },
+      ]),
+    ]);
+
+    const totals = txResult[0]?.totals?.[0] || { collected: 0, given: 0, transaction_count: 0 };
+    const daily = (txResult[0]?.daily || []).map((d) => ({
+      date: d._id,
+      collected: d.collected,
+      given: d.given,
+    }));
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: {
+        totals: {
+          collected: totals.collected,
+          given: totals.given,
+          net: totals.collected - totals.given,
+          transaction_count: totals.transaction_count,
+        },
+        daily,
+        top_customers: topCustomers,
       },
     });
   } catch (error) {
