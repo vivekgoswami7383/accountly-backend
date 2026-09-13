@@ -3,14 +3,14 @@ import { STATUS, EXPENSE_CATEGORIES } from "../helpers/constants.js";
 
 const ExpenseSchema = new mongoose.Schema(
   {
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     business_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
+      required: true,
+    },
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },
