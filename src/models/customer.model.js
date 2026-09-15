@@ -27,6 +27,7 @@ const CustomerSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    image_key: { type: String, default: null },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],

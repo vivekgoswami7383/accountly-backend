@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema(
       default: USER_ROLES.STAFF,
     },
     permissions: [String],
+    avatar_key: { type: String, default: null },
     theme: {
       type: String,
       enum: ["light", "dark"],

@@ -13,38 +13,47 @@ const usersPermissions = JSON.parse(
 
 const User = mongoose.model("User");
 
-export const checkPermissions = (routes) => {
+export const userHasAnyPermission = async (requestUser, routes) => {
   const allowedRoutes = Array.isArray(routes) ? routes : [routes];
 
+  const user = await User.findOne({
+    _id: requestUser?._id,
+    status: STATUS.ACTIVE,
+  }).lean();
+
+  if (!user) return { found: false, allowed: false };
+
+  if (user.role === USER_ROLES.SUPER_ADMIN) {
+    return { found: true, allowed: true };
+  }
+
+  const userPermissions = usersPermissions.find(
+    (permission) => permission.role === user.role
+  )?.permissions;
+
+  const allowed = allowedRoutes.some((route) =>
+    userPermissions?.includes(route)
+  );
+
+  return { found: true, allowed };
+};
+
+export const checkPermissions = (routes) => {
   return async function (req, res, next) {
     try {
-      const requestUser = req.user;
+      const { found, allowed } = await userHasAnyPermission(
+        req.user,
+        routes
+      );
 
-      const user = await User.findOne({
-        _id: requestUser?._id,
-        status: STATUS.ACTIVE,
-      }).lean();
-
-      if (!user) {
+      if (!found) {
         return res.status(STATUS_CODES.NOT_FOUND).json({
           success: false,
           message: MESSAGES.ERROR_MESSAGES.USER_NOT_FOUND,
         });
       }
 
-      if (user.role === USER_ROLES.SUPER_ADMIN) {
-        return next();
-      }
-
-      const userPermissions = usersPermissions.find(
-        (permission) => permission.role === user.role
-      )?.permissions;
-
-      const hasPermission = allowedRoutes.some((route) =>
-        userPermissions?.includes(route)
-      );
-
-      if (!hasPermission) {
+      if (!allowed) {
         return res.status(STATUS_CODES.FORBIDDEN).json({
           success: false,
           message: MESSAGES.RESPONSE_MESSAGES.FORBIDDEN,
