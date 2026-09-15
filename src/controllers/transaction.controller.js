@@ -5,13 +5,20 @@ import {
   normalizeTransactionType,
   recomputeCustomerBalance,
 } from "../helpers/functions.js";
-import { getSignedUrlFor } from "../utils/s3.js";
+import { getSignedUrlFor, markAttachmentLinked } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
 import Customer from "../models/customer.model.js";
 
 const withAttachmentUrl = async (transaction) => {
   const obj = transaction.toObject ? transaction.toObject() : transaction;
   return { ...obj, attachment_url: await getSignedUrlFor(obj.attachment_key) };
+};
+
+const resolveAttachmentTransactionId = (attachmentKey, businessId) => {
+  if (!attachmentKey) return undefined;
+  const [keyBusinessId, category, entityId] = attachmentKey.split("/");
+  if (category !== "attachments" || keyBusinessId !== String(businessId)) return undefined;
+  return mongoose.Types.ObjectId.isValid(entityId) ? entityId : undefined;
 };
 
 export const create = async (req, res) => {
@@ -56,7 +63,10 @@ export const create = async (req, res) => {
       });
     }
 
+    const attachmentTransactionId = resolveAttachmentTransactionId(attachment_key, business_id);
+
     const transaction = await Transaction.create({
+      ...(attachmentTransactionId ? { _id: attachmentTransactionId } : {}),
       business_id,
       customer: { _id: customerDoc._id, name: customerDoc.name },
       amount,
@@ -70,6 +80,8 @@ export const create = async (req, res) => {
     const customer_balance = await recomputeCustomerBalance(customerDoc._id, {
       transactionCountDelta: 1,
     });
+
+    if (attachmentTransactionId) await markAttachmentLinked(attachment_key);
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
