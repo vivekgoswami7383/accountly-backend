@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import mongoose from "mongoose";
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import { userHasAnyPermission } from "../middlewares/check-permission.js";
 import { uploadToS3, getSignedUrlFor } from "../utils/s3.js";
@@ -46,10 +45,6 @@ const authorizeUpload = async (req, category, entityId) => {
     }
 
     case "attachment": {
-      if (!entityId) {
-        if (!(await requirePermission(req, "transaction.create"))) return FORBIDDEN;
-        return { ok: true, generatedEntityId: new mongoose.Types.ObjectId().toString() };
-      }
       if (!(await requirePermission(req, "transaction.update"))) return FORBIDDEN;
       return requireOwnedEntity(Transaction, { _id: entityId, business_id, status: STATUS.ACTIVE });
     }
@@ -95,15 +90,13 @@ export const uploadFile = async (req, res) => {
       attachment: "attachments",
     };
     const businessSegment = business_id || "no-business";
-    const entitySegment = authResult.generatedEntityId || entityId;
     const keyPrefix =
       category === "logo"
         ? `${businessSegment}/${folderByCategory[category]}`
-        : `${businessSegment}/${folderByCategory[category]}/${entitySegment}`;
+        : `${businessSegment}/${folderByCategory[category]}/${entityId}`;
     const key = `${keyPrefix}/${randomUUID()}.${extension}`;
 
-    const tagging = authResult.generatedEntityId ? "linked=false" : undefined;
-    await uploadToS3(req.file.buffer, key, req.file.mimetype, tagging);
+    await uploadToS3(req.file.buffer, key, req.file.mimetype);
     const url = await getSignedUrlFor(key);
 
     return res.status(STATUS_CODES.SUCCESS).json({

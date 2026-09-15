@@ -5,7 +5,7 @@ import {
   normalizeTransactionType,
   recomputeCustomerBalance,
 } from "../helpers/functions.js";
-import { getSignedUrlFor, markAttachmentLinked } from "../utils/s3.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
 import Customer from "../models/customer.model.js";
 
@@ -14,24 +14,11 @@ const withAttachmentUrl = async (transaction) => {
   return { ...obj, attachment_url: await getSignedUrlFor(obj.attachment_key) };
 };
 
-const resolveAttachmentTransactionId = (attachmentKey, businessId) => {
-  if (!attachmentKey) return undefined;
-  const [keyBusinessId, category, entityId] = attachmentKey.split("/");
-  if (category !== "attachments" || keyBusinessId !== String(businessId)) return undefined;
-  return mongoose.Types.ObjectId.isValid(entityId) ? entityId : undefined;
-};
-
 export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const {
-      customer,
-      amount,
-      description,
-      payment_mode,
-      transaction_date,
-      attachment_key,
-    } = req.body;
+    const { customer, amount, description, payment_mode, transaction_date } =
+      req.body;
 
     const transaction_type = normalizeTransactionType(
       req.body.transaction_type
@@ -63,25 +50,19 @@ export const create = async (req, res) => {
       });
     }
 
-    const attachmentTransactionId = resolveAttachmentTransactionId(attachment_key, business_id);
-
     const transaction = await Transaction.create({
-      ...(attachmentTransactionId ? { _id: attachmentTransactionId } : {}),
       business_id,
       customer: { _id: customerDoc._id, name: customerDoc.name },
       amount,
       transaction_type,
       payment_mode,
       description: description || "",
-      attachment_key: attachment_key || null,
       ...(transaction_date ? { created_at: new Date(transaction_date) } : {}),
     });
 
     const customer_balance = await recomputeCustomerBalance(customerDoc._id, {
       transactionCountDelta: 1,
     });
-
-    if (attachmentTransactionId) await markAttachmentLinked(attachment_key);
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
