@@ -30,7 +30,7 @@ const TransactionSchema = new mongoose.Schema(
       required: true,
     },
     description: { type: String, default: "" },
-    receipt_key: { type: String, default: null },
+    attachment_key: { type: String, default: null },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],

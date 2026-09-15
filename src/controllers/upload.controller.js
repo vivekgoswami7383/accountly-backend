@@ -12,55 +12,49 @@ const EXTENSION_BY_MIMETYPE = {
   "application/pdf": "pdf",
 };
 
+const FORBIDDEN = { ok: false, status: STATUS_CODES.FORBIDDEN };
+const NOT_FOUND = { ok: false, status: STATUS_CODES.NOT_FOUND };
+
+const requirePermission = async (req, permission) => {
+  const { allowed } = await userHasAnyPermission(req.user, [permission]);
+  return allowed;
+};
+
+const requireOwnedEntity = async (Model, filter) => {
+  const doc = await Model.findOne(filter);
+  return doc ? { ok: true } : NOT_FOUND;
+};
+
 const authorizeUpload = async (req, category, entityId) => {
   const { business_id, _id: userId } = req.user;
 
-  if (category === "logo") {
-    if (String(business_id) !== String(entityId)) {
-      return { ok: false, status: STATUS_CODES.FORBIDDEN };
-    }
-    const { allowed } = await userHasAnyPermission(req.user, ["business.update"]);
-    return allowed ? { ok: true } : { ok: false, status: STATUS_CODES.FORBIDDEN };
-  }
-
-  if (category === "avatar") {
-    if (String(userId) !== String(entityId)) {
-      return { ok: false, status: STATUS_CODES.FORBIDDEN };
-    }
-    const { allowed } = await userHasAnyPermission(req.user, ["user.update"]);
-    return allowed ? { ok: true } : { ok: false, status: STATUS_CODES.FORBIDDEN };
-  }
-
-  if (category === "customer") {
-    const { allowed } = await userHasAnyPermission(req.user, ["customer.update"]);
-    if (!allowed) return { ok: false, status: STATUS_CODES.FORBIDDEN };
-
-    const customer = await Customer.findOne({
-      _id: entityId,
-      business_id,
-      status: { $ne: STATUS.DELETED },
-    });
-    return customer ? { ok: true } : { ok: false, status: STATUS_CODES.NOT_FOUND };
-  }
-
-  if (category === "receipt") {
-    if (!entityId) {
-      const { allowed } = await userHasAnyPermission(req.user, ["transaction.create"]);
-      return allowed ? { ok: true, pending: true } : { ok: false, status: STATUS_CODES.FORBIDDEN };
+  switch (category) {
+    case "logo": {
+      if (String(business_id) !== String(entityId)) return FORBIDDEN;
+      return (await requirePermission(req, "business.update")) ? { ok: true } : FORBIDDEN;
     }
 
-    const { allowed } = await userHasAnyPermission(req.user, ["transaction.update"]);
-    if (!allowed) return { ok: false, status: STATUS_CODES.FORBIDDEN };
+    case "avatar": {
+      if (String(userId) !== String(entityId)) return FORBIDDEN;
+      return (await requirePermission(req, "user.update")) ? { ok: true } : FORBIDDEN;
+    }
 
-    const transaction = await Transaction.findOne({
-      _id: entityId,
-      business_id,
-      status: STATUS.ACTIVE,
-    });
-    return transaction ? { ok: true } : { ok: false, status: STATUS_CODES.NOT_FOUND };
+    case "customer": {
+      if (!(await requirePermission(req, "customer.update"))) return FORBIDDEN;
+      return requireOwnedEntity(Customer, { _id: entityId, business_id, status: { $ne: STATUS.DELETED } });
+    }
+
+    case "attachment": {
+      if (!entityId) {
+        return (await requirePermission(req, "transaction.create")) ? { ok: true, pending: true } : FORBIDDEN;
+      }
+      if (!(await requirePermission(req, "transaction.update"))) return FORBIDDEN;
+      return requireOwnedEntity(Transaction, { _id: entityId, business_id, status: STATUS.ACTIVE });
+    }
+
+    default:
+      return { ok: false, status: STATUS_CODES.BAD_REQUEST };
   }
-
-  return { ok: false, status: STATUS_CODES.BAD_REQUEST };
 };
 
 export const uploadFile = async (req, res) => {
@@ -73,7 +67,7 @@ export const uploadFile = async (req, res) => {
     }
 
     const { category, entity_id: entityId } = req.body;
-    const allowedCategories = ["logo", "avatar", "customer", "receipt"];
+    const allowedCategories = ["logo", "avatar", "customer", "attachment"];
     if (!allowedCategories.includes(category)) {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
         success: false,
@@ -96,7 +90,7 @@ export const uploadFile = async (req, res) => {
       logo: "logo",
       avatar: "avatars",
       customer: "customers",
-      receipt: "receipts",
+      attachment: "attachments",
     };
     const businessSegment = business_id || "no-business";
     const entitySegment = authResult.pending ? "pending" : entityId;
