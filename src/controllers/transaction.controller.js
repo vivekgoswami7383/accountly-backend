@@ -5,14 +5,26 @@ import {
   normalizeTransactionType,
   recomputeCustomerBalance,
 } from "../helpers/functions.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
 import Customer from "../models/customer.model.js";
+
+const withReceiptUrl = async (transaction) => {
+  const obj = transaction.toObject ? transaction.toObject() : transaction;
+  return { ...obj, receipt_url: await getSignedUrlFor(obj.receipt_key) };
+};
 
 export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const { customer, amount, description, payment_mode, transaction_date } =
-      req.body;
+    const {
+      customer,
+      amount,
+      description,
+      payment_mode,
+      transaction_date,
+      receipt_key,
+    } = req.body;
 
     const transaction_type = normalizeTransactionType(
       req.body.transaction_type
@@ -51,6 +63,7 @@ export const create = async (req, res) => {
       transaction_type,
       payment_mode,
       description: description || "",
+      receipt_key: receipt_key || null,
       ...(transaction_date ? { created_at: new Date(transaction_date) } : {}),
     });
 
@@ -60,7 +73,7 @@ export const create = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { transaction, customer_balance },
+      data: { transaction: await withReceiptUrl(transaction), customer_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -295,7 +308,7 @@ export const transaction = async (req, res) => {
 
   return res.status(STATUS_CODES.SUCCESS).json({
     success: true,
-    transaction,
+    transaction: await withReceiptUrl(transaction),
   });
 };
 
@@ -345,6 +358,7 @@ export const update = async (req, res) => {
     if (req.body.description != null) patch.description = req.body.description;
     if (req.body.payment_mode != null)
       patch.payment_mode = req.body.payment_mode;
+    if (req.body.receipt_key != null) patch.receipt_key = req.body.receipt_key;
     if (req.body.transaction_date != null) {
       const parsedDate = new Date(req.body.transaction_date);
       if (isNaN(parsedDate.getTime())) {
@@ -375,7 +389,7 @@ export const update = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { transaction: updated, customer_balance },
+      data: { transaction: await withReceiptUrl(updated), customer_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
