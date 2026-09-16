@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { MAX_AMOUNT, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import {
   getSearchFilterQuery,
   normalizeTransactionType,
@@ -34,6 +34,13 @@ export const create = async (req, res) => {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
         success: false,
         message: MESSAGES.ERROR_MESSAGES.INVALID_AMOUNT,
+      });
+    }
+
+    if (Number(amount) > MAX_AMOUNT) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.AMOUNT_TOO_LARGE,
       });
     }
 
@@ -330,6 +337,12 @@ export const update = async (req, res) => {
         return res.status(STATUS_CODES.BAD_REQUEST).json({
           success: false,
           message: MESSAGES.ERROR_MESSAGES.INVALID_AMOUNT,
+        });
+      }
+      if (Number(req.body.amount) > MAX_AMOUNT) {
+        return res.status(STATUS_CODES.BAD_REQUEST).json({
+          success: false,
+          message: MESSAGES.ERROR_MESSAGES.AMOUNT_TOO_LARGE,
         });
       }
       patch.amount = req.body.amount;

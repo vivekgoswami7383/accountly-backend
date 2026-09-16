@@ -1,12 +1,14 @@
 import Joi from "joi";
-import { EXPENSE_CATEGORIES } from "../helpers/constants.js";
+import { EXPENSE_CATEGORIES, MAX_AMOUNT } from "../helpers/constants.js";
 
 export const createExpenseSchema = Joi.object({
   business: Joi.forbidden(),
   business_id: Joi.forbidden(),
   user: Joi.forbidden(),
   user_id: Joi.forbidden(),
-  amount: Joi.number().positive().required(),
+  amount: Joi.number().positive().max(MAX_AMOUNT).required().messages({
+    "number.max": '"amount" is too large',
+  }),
   category: Joi.string()
     .required()
     .valid(...Object.values(EXPENSE_CATEGORIES)),
