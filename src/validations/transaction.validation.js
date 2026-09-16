@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { MAX_AMOUNT } from "../helpers/constants.js";
 
 export const createTransactionSchema = Joi.object({
   business: Joi.forbidden(),
@@ -8,7 +9,9 @@ export const createTransactionSchema = Joi.object({
   })
     .unknown(true)
     .required(),
-  amount: Joi.number().positive().required(),
+  amount: Joi.number().positive().max(MAX_AMOUNT).required().messages({
+    "number.max": '"amount" is too large',
+  }),
   transaction_type: Joi.string()
     .required()
     .valid("debit", "credit", "sent", "received"),

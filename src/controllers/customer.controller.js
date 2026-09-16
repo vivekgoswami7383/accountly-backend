@@ -1,4 +1,4 @@
-import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
 import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
@@ -152,6 +152,13 @@ export const update = async (req, res) => {
           message: MESSAGES.ERROR_MESSAGES.CUSTOMER_ALREADY_EXISTS,
         });
       }
+    }
+
+    if (req.body.name != null && req.body.name.length > MAX_NAME_LENGTH) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.NAME_TOO_LONG,
+      });
     }
 
     const patch = {};

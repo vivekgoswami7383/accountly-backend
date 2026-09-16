@@ -32,6 +32,9 @@ export const EXPENSE_CATEGORIES = {
   OTHER: "other",
 };
 
+export const MAX_AMOUNT = 999999999999;
+export const MAX_NAME_LENGTH = 60;
+
 export const STATUS_CODES = {
   SUCCESS: 200,
   BAD_REQUEST: 400,
@@ -59,6 +62,8 @@ export const MESSAGES = {
     TRANSACTION_NOT_FOUND: "Transaction not found",
     INVALID_TRANSACTION_TYPE: "Transaction type must be debit or credit",
     INVALID_AMOUNT: "Amount must be greater than zero",
+    AMOUNT_TOO_LARGE: "Amount is too large",
+    NAME_TOO_LONG: "Name is too long",
     INVALID_TRANSACTION_DATE: "Transaction date is invalid",
     EXPENSE_NOT_FOUND: "Expense not found",
     INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
