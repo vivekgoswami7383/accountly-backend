@@ -6,6 +6,7 @@ import {
   USER_ROLES,
 } from "../helpers/constants.js";
 import { hashPassword } from "../helpers/functions.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -19,6 +20,11 @@ const usersPermissions = JSON.parse(
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
 const BusinessStats = mongoose.model("BusinessStats");
+
+const withLogoUrl = async (business) => {
+  const obj = business.toObject ? business.toObject() : business;
+  return { ...obj, logo_url: await getSignedUrlFor(obj.logo) };
+};
 
 export const create = async (req, res) => {
   const {
@@ -146,7 +152,7 @@ export const business = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { business, user },
+      data: { business: await withLogoUrl(business), user },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -195,7 +201,7 @@ export const update = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { business },
+      data: { business: await withLogoUrl(business) },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

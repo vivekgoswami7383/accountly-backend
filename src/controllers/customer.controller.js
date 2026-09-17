@@ -2,6 +2,13 @@ import { MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES } from "../helpers/cons
 import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
 import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
+import { getSignedUrlFor } from "../utils/s3.js";
+
+const withImageUrl = async (customer) => {
+  if (!customer) return customer;
+  const obj = customer.toObject ? customer.toObject() : customer;
+  return { ...obj, image_url: await getSignedUrlFor(obj.image_key) };
+};
 
 export const create = async (req, res) => {
   try {
@@ -32,7 +39,7 @@ export const create = async (req, res) => {
 
         return res.status(STATUS_CODES.SUCCESS).json({
           success: true,
-          customer: updatedCustomer,
+          customer: await withImageUrl(updatedCustomer),
         });
       }
     }
@@ -48,7 +55,7 @@ export const create = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      customer: newCustomer,
+      customer: await withImageUrl(newCustomer),
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -80,7 +87,7 @@ export const customers = async (req, res) => {
       return res.status(STATUS_CODES.SUCCESS).json({
         success: true,
         data: {
-          customers,
+          customers: await Promise.all(customers.map(withImageUrl)),
           total,
           has_more: (pageNum - 1) * limitNum + customers.length < total,
         },
@@ -90,7 +97,7 @@ export const customers = async (req, res) => {
     const customers = await Customer.find(baseFilter).sort({ created_at: -1 });
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { customers },
+      data: { customers: await Promise.all(customers.map(withImageUrl)) },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -111,7 +118,7 @@ export const customer = async (req, res) => {
     });
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { customer },
+      data: { customer: await withImageUrl(customer) },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -165,6 +172,7 @@ export const update = async (req, res) => {
     if (req.body.name != null) patch.name = req.body.name;
     if (req.body.phone != null) patch.phone = req.body.phone;
     if (req.body.address != null) patch.address = req.body.address;
+    if (req.body.image_key != null) patch.image_key = req.body.image_key;
 
     const updatedCustomer = await Customer.findByIdAndUpdate(id, patch, {
       new: true,
@@ -172,7 +180,7 @@ export const update = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      customer: updatedCustomer,
+      customer: await withImageUrl(updatedCustomer),
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

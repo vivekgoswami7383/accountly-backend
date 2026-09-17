@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { STATUS_CODES, MESSAGES, STATUS } from "../helpers/constants.js";
 import { comparePassword, generateToken } from "../helpers/functions.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
@@ -66,9 +67,14 @@ export const me = async (req, res) => {
       _id: user.business_id,
     }).lean();
 
+    const userObj = user.toObject ? user.toObject() : user;
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { user, business },
+      data: {
+        user: { ...userObj, avatar_url: await getSignedUrlFor(userObj.avatar_key) },
+        business: business ? { ...business, logo_url: await getSignedUrlFor(business.logo) } : business,
+      },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

@@ -1,5 +1,11 @@
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 import User from "../models/user.model.js";
+
+const withAvatarUrl = async (user) => {
+  const obj = user.toObject ? user.toObject() : user;
+  return { ...obj, avatar_url: await getSignedUrlFor(obj.avatar_key) };
+};
 
 export const update = async (req, res) => {
   try {
@@ -29,6 +35,7 @@ export const update = async (req, res) => {
     if (req.body.phone != null) patch.phone = req.body.phone;
     if (req.body.theme != null) patch.theme = req.body.theme;
     if (req.body.language != null) patch.language = req.body.language;
+    if (req.body.avatar_key != null) patch.avatar_key = req.body.avatar_key;
 
     const response = await User.findByIdAndUpdate(id, patch, {
       new: true,
@@ -36,7 +43,7 @@ export const update = async (req, res) => {
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { user: response },
+      data: { user: await withAvatarUrl(response) },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

@@ -6,4 +6,5 @@ export const updateUserSchema = Joi.object({
   phone: Joi.string().required(),
   theme: Joi.string().valid("light", "dark").required(),
   language: Joi.string().valid("en", "hi", "gu", "hi-latn", "gu-latn").required(),
+  avatar_key: Joi.string().allow("", null),
 });

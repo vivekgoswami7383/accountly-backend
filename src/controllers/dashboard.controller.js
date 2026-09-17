@@ -1,8 +1,14 @@
 import { STATUS_CODES, STATUS, MESSAGES } from "../helpers/constants.js";
+import { getSignedUrlFor } from "../utils/s3.js";
 import Business from "../models/business.model.js";
 import BusinessStats from "../models/business-stats.model.js";
 import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
+
+const withImageUrl = async (customer) => {
+  const obj = customer.toObject ? customer.toObject() : customer;
+  return { ...obj, image_url: await getSignedUrlFor(obj.image_key) };
+};
 
 export const statistics = async (req, res) => {
   try {
@@ -46,7 +52,7 @@ export const statistics = async (req, res) => {
           customer_count: stats?.customer_count || 0,
           total_transactions: stats?.total_transactions || 0,
         },
-        recent_customers: customers,
+        recent_customers: await Promise.all(customers.map(withImageUrl)),
         recent_transactions: transactions,
       },
     });
