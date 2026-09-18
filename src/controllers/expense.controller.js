@@ -102,12 +102,30 @@ export const summary = async (req, res) => {
     const { _id: user_id } = req.user;
 
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    const clientStart = (value, maxAgeDays) => {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return null;
+      if (date.getTime() > now.getTime() + DAY_MS) return null;
+      if (date.getTime() < now.getTime() - maxAgeDays * DAY_MS) return null;
+      return date;
+    };
+
+    const startOfToday =
+      clientStart(req.query.today_start, 2) ||
+      new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     const dayOfWeek = startOfToday.getDay();
     const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = new Date(startOfToday);
-    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fallbackWeekStart = new Date(startOfToday);
+    fallbackWeekStart.setDate(fallbackWeekStart.getDate() - diffToMonday);
+
+    const startOfWeek =
+      clientStart(req.query.week_start, 8) || fallbackWeekStart;
+    const startOfMonth =
+      clientStart(req.query.month_start, 32) ||
+      new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [result] = await Expense.aggregate([
       {
