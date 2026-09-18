@@ -70,9 +70,24 @@ export const lookup = async (req, res) => {
     }
 
     const target = await findLinkableTarget(customer.phone, business_id);
+    if (!target) {
+      return res.status(STATUS_CODES.SUCCESS).json({
+        success: true,
+        data: { status: "unavailable" },
+      });
+    }
+
+    const pending = await Link.findOne({
+      pair_key: buildPairKey(business_id, target.business._id),
+      status: LINK_STATUS.PENDING,
+      target_business_id: business_id,
+    }).lean();
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { status: target ? "available" : "unavailable" },
+      data: pending
+        ? { status: "incoming", link_id: pending._id }
+        : { status: "available" },
     });
   } catch (error) {
     return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
