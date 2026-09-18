@@ -28,6 +28,16 @@ const CustomerSchema = new mongoose.Schema(
       default: "",
     },
     image_key: { type: String, default: null },
+    link_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Link",
+      default: null,
+    },
+    link_status: {
+      type: String,
+      enum: ["pending", "active", null],
+      default: null,
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],

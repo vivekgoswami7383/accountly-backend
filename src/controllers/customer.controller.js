@@ -3,6 +3,8 @@ import Customer from "../models/customer.model.js";
 import Transaction from "../models/transaction.model.js";
 import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
 import { getSignedUrlFor } from "../utils/s3.js";
+import { endLink } from "../services/ledger-link.service.js";
+import Link, { LINK_STATUS } from "../models/link.model.js";
 
 const withImageUrl = async (customer) => {
   if (!customer) return customer;
@@ -146,6 +148,17 @@ export const update = async (req, res) => {
       });
     }
 
+    if (
+      customer.link_id &&
+      req.body.phone != null &&
+      req.body.phone !== customer.phone
+    ) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.LINK_PHONE_LOCKED,
+      });
+    }
+
     if (req.body.phone) {
       const existCustomer = await Customer.findOne({
         _id: { $ne: id },
@@ -211,6 +224,18 @@ export const remove = async (req, res) => {
       "customer._id": id,
       status: STATUS.ACTIVE,
     });
+
+    if (customer.link_id) {
+      const link = await Link.findById(customer.link_id);
+      if (
+        link &&
+        [LINK_STATUS.ACTIVE, LINK_STATUS.PENDING].includes(link.status)
+      ) {
+        await endLink(link, LINK_STATUS.UNLINKED, {
+          responded_by: req.user._id,
+        });
+      }
+    }
 
     await Customer.findByIdAndUpdate(
       id,

@@ -6,6 +6,11 @@ import {
   recomputeCustomerBalance,
 } from "../helpers/functions.js";
 import { getSignedUrlFor } from "../utils/s3.js";
+import {
+  mirrorTransactionCreate,
+  mirrorTransactionDelete,
+  mirrorTransactionUpdate,
+} from "../services/ledger-link.service.js";
 import Transaction from "../models/transaction.model.js";
 import Customer from "../models/customer.model.js";
 
@@ -71,9 +76,12 @@ export const create = async (req, res) => {
       transactionCountDelta: 1,
     });
 
+    await mirrorTransactionCreate(transaction, customerDoc);
+    const saved = (await Transaction.findById(transaction._id)) || transaction;
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { transaction: await withAttachmentUrl(transaction), customer_balance },
+      data: { transaction: await withAttachmentUrl(saved), customer_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -330,6 +338,13 @@ export const update = async (req, res) => {
       });
     }
 
+    if (existing.mirror_of) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.MIRRORED_READ_ONLY,
+      });
+    }
+
     const patch = {};
 
     if (req.body.amount != null) {
@@ -393,6 +408,8 @@ export const update = async (req, res) => {
       updated.customer._id
     );
 
+    await mirrorTransactionUpdate(updated);
+
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: { transaction: await withAttachmentUrl(updated), customer_balance },
@@ -422,7 +439,15 @@ export const remove = async (req, res) => {
       });
     }
 
+    if (transaction.mirror_of) {
+      return res.status(STATUS_CODES.FORBIDDEN).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.MIRRORED_READ_ONLY,
+      });
+    }
+
     await Transaction.findByIdAndUpdate(id, { status: STATUS.DELETED });
+    await mirrorTransactionDelete(transaction);
 
     const customer_balance = await recomputeCustomerBalance(
       transaction.customer._id,

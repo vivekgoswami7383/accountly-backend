@@ -1,0 +1,391 @@
+import mongoose from "mongoose";
+import {
+  MESSAGES,
+  STATUS,
+  STATUS_CODES,
+  USER_ROLES,
+} from "../helpers/constants.js";
+import { adjustBusinessStats } from "../helpers/functions.js";
+import Customer from "../models/customer.model.js";
+import Link, { LINK_STATUS } from "../models/link.model.js";
+import {
+  buildPairKey,
+  endLink,
+  resyncLink,
+} from "../services/ledger-link.service.js";
+
+const User = mongoose.model("User");
+const Business = mongoose.model("Business");
+
+const fail = (res, status, message) =>
+  res.status(status).json({ success: false, message });
+
+const findLinkableTarget = async (phone, ownBusinessId) => {
+  const owner = await User.findOne({
+    phone,
+    role: USER_ROLES.OWNER,
+    status: STATUS.ACTIVE,
+    business_id: { $ne: null },
+  }).lean();
+  if (!owner || String(owner.business_id) === String(ownBusinessId)) {
+    return null;
+  }
+  const business = await Business.findOne({
+    _id: owner.business_id,
+    status: STATUS.ACTIVE,
+  }).lean();
+  return business ? { owner, business } : null;
+};
+
+const serializeLink = (link) => ({
+  id: link._id,
+  status: link.status,
+  requested_at: link.created_at,
+  accepted_at: link.accepted_at,
+});
+
+const findOwnedCustomer = (business_id, id) =>
+  Customer.findOne({ _id: id, business_id, status: STATUS.ACTIVE });
+
+export const lookup = async (req, res) => {
+  try {
+    const { business_id } = req.user;
+    const customer = await findOwnedCustomer(
+      business_id,
+      req.query.customer_id
+    );
+    if (!customer) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND
+      );
+    }
+
+    if (customer.link_status) {
+      return res.status(STATUS_CODES.SUCCESS).json({
+        success: true,
+        data: { status: customer.link_status, link_id: customer.link_id },
+      });
+    }
+
+    const target = await findLinkableTarget(customer.phone, business_id);
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { status: target ? "available" : "unavailable" },
+    });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const request = async (req, res) => {
+  try {
+    const { business_id, _id: userId } = req.user;
+    const customer = await findOwnedCustomer(
+      business_id,
+      req.body.customer_id
+    );
+    if (!customer) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND
+      );
+    }
+    if (customer.link_id) {
+      return fail(
+        res,
+        STATUS_CODES.CONFLICT,
+        MESSAGES.ERROR_MESSAGES.LINK_ALREADY_EXISTS
+      );
+    }
+
+    const target = await findLinkableTarget(customer.phone, business_id);
+    if (!target) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.LINK_CUSTOMER_NOT_ON_APP
+      );
+    }
+
+    const pairKey = buildPairKey(business_id, target.business._id);
+    const existing = await Link.findOne({ pair_key: pairKey });
+
+    if (existing) {
+      if (existing.status === LINK_STATUS.BLOCKED) {
+        return fail(
+          res,
+          STATUS_CODES.FORBIDDEN,
+          MESSAGES.ERROR_MESSAGES.LINK_UNAVAILABLE
+        );
+      }
+      if (
+        existing.status === LINK_STATUS.ACTIVE ||
+        existing.status === LINK_STATUS.PENDING
+      ) {
+        return fail(
+          res,
+          STATUS_CODES.CONFLICT,
+          MESSAGES.ERROR_MESSAGES.LINK_ALREADY_EXISTS
+        );
+      }
+    }
+
+    const fields = {
+      requester_business_id: business_id,
+      target_business_id: target.business._id,
+      requester_customer_id: customer._id,
+      target_customer_id: null,
+      requested_by: userId,
+      responded_by: null,
+      blocked_by_business_id: null,
+      accepted_at: null,
+      status: LINK_STATUS.PENDING,
+    };
+
+    const link = existing
+      ? await Link.findByIdAndUpdate(existing._id, fields, { new: true })
+      : await Link.create({ pair_key: pairKey, ...fields });
+
+    await Customer.updateOne(
+      { _id: customer._id },
+      { $set: { link_id: link._id, link_status: LINK_STATUS.PENDING } }
+    );
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { link: serializeLink(link) },
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return fail(
+        res,
+        STATUS_CODES.CONFLICT,
+        MESSAGES.ERROR_MESSAGES.LINK_ALREADY_EXISTS
+      );
+    }
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const incoming = async (req, res) => {
+  try {
+    const { business_id } = req.user;
+    const links = await Link.find({
+      target_business_id: business_id,
+      status: LINK_STATUS.PENDING,
+    })
+      .sort({ created_at: -1 })
+      .limit(100)
+      .lean();
+
+    const businesses = await Business.find({
+      _id: { $in: links.map((link) => link.requester_business_id) },
+    })
+      .select("business_name")
+      .lean();
+    const nameById = new Map(
+      businesses.map((business) => [String(business._id), business.business_name])
+    );
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: {
+        requests: links.map((link) => ({
+          id: link._id,
+          business_name:
+            nameById.get(String(link.requester_business_id)) || "",
+          requested_at: link.created_at,
+        })),
+      },
+    });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+const loadPendingForTarget = async (req, res) => {
+  const link = await Link.findOne({
+    _id: req.params.id,
+    target_business_id: req.user.business_id,
+  });
+  if (!link) {
+    fail(
+      res,
+      STATUS_CODES.NOT_FOUND,
+      MESSAGES.ERROR_MESSAGES.LINK_NOT_FOUND
+    );
+    return null;
+  }
+  if (link.status !== LINK_STATUS.PENDING) {
+    fail(
+      res,
+      STATUS_CODES.CONFLICT,
+      MESSAGES.ERROR_MESSAGES.LINK_INVALID_STATE
+    );
+    return null;
+  }
+  return link;
+};
+
+export const accept = async (req, res) => {
+  try {
+    const { business_id, _id: userId } = req.user;
+    const link = await loadPendingForTarget(req, res);
+    if (!link) return null;
+
+    const requesterBusiness = await Business.findById(
+      link.requester_business_id
+    ).lean();
+    const requesterOwner = requesterBusiness
+      ? await User.findById(requesterBusiness.user._id).lean()
+      : null;
+    if (!requesterBusiness || !requesterOwner) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.LINK_NOT_FOUND
+      );
+    }
+
+    let counterpart = await Customer.findOne({
+      business_id,
+      phone: requesterOwner.phone,
+    });
+
+    if (!counterpart) {
+      counterpart = await Customer.create({
+        business_id,
+        name: requesterBusiness.business_name,
+        phone: requesterOwner.phone,
+      });
+      await adjustBusinessStats(business_id, { customer_count: 1 });
+    } else if (counterpart.status === STATUS.DELETED) {
+      counterpart = await Customer.findByIdAndUpdate(
+        counterpart._id,
+        {
+          status: STATUS.ACTIVE,
+          balance: 0,
+          name: requesterBusiness.business_name,
+        },
+        { new: true }
+      );
+      await adjustBusinessStats(business_id, { customer_count: 1 });
+    }
+
+    if (counterpart.link_id) {
+      return fail(
+        res,
+        STATUS_CODES.CONFLICT,
+        MESSAGES.ERROR_MESSAGES.LINK_ALREADY_EXISTS
+      );
+    }
+
+    const updated = await Link.findByIdAndUpdate(
+      link._id,
+      {
+        status: LINK_STATUS.ACTIVE,
+        target_customer_id: counterpart._id,
+        responded_by: userId,
+        accepted_at: new Date(),
+      },
+      { new: true }
+    );
+
+    await Customer.updateMany(
+      { _id: { $in: [link.requester_customer_id, counterpart._id] } },
+      { $set: { link_id: link._id, link_status: LINK_STATUS.ACTIVE } }
+    );
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { link: serializeLink(updated), customer_id: counterpart._id },
+    });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const decline = async (req, res) => {
+  try {
+    const link = await loadPendingForTarget(req, res);
+    if (!link) return null;
+
+    await endLink(link, LINK_STATUS.DECLINED, { responded_by: req.user._id });
+    return res.status(STATUS_CODES.SUCCESS).json({ success: true, data: {} });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const block = async (req, res) => {
+  try {
+    const link = await loadPendingForTarget(req, res);
+    if (!link) return null;
+
+    await endLink(link, LINK_STATUS.BLOCKED, {
+      responded_by: req.user._id,
+      blocked_by_business_id: req.user.business_id,
+    });
+    return res.status(STATUS_CODES.SUCCESS).json({ success: true, data: {} });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+const findOwnLink = async (req) =>
+  Link.findOne({
+    _id: req.params.id,
+    $or: [
+      { requester_business_id: req.user.business_id },
+      { target_business_id: req.user.business_id },
+    ],
+  });
+
+export const unlink = async (req, res) => {
+  try {
+    const link = await findOwnLink(req);
+    if (!link) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.LINK_NOT_FOUND
+      );
+    }
+    if (![LINK_STATUS.ACTIVE, LINK_STATUS.PENDING].includes(link.status)) {
+      return fail(
+        res,
+        STATUS_CODES.CONFLICT,
+        MESSAGES.ERROR_MESSAGES.LINK_INVALID_STATE
+      );
+    }
+
+    await endLink(link, LINK_STATUS.UNLINKED, { responded_by: req.user._id });
+    return res.status(STATUS_CODES.SUCCESS).json({ success: true, data: {} });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const resync = async (req, res) => {
+  try {
+    const link = await findOwnLink(req);
+    if (!link || link.status !== LINK_STATUS.ACTIVE) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.LINK_NOT_FOUND
+      );
+    }
+
+    const synced = await resyncLink(link);
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: { synced },
+    });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};

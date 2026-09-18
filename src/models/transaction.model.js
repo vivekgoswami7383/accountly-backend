@@ -31,6 +31,21 @@ const TransactionSchema = new mongoose.Schema(
     },
     description: { type: String, default: "" },
     attachment_key: { type: String, default: null },
+    link_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Link",
+      default: null,
+    },
+    mirror_of: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      default: null,
+    },
+    mirrored_transaction_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      default: null,
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
@@ -45,6 +60,10 @@ const TransactionSchema = new mongoose.Schema(
 
 TransactionSchema.index({ "customer._id": 1, status: 1, created_at: 1 });
 TransactionSchema.index({ business_id: 1, status: 1, created_at: -1 });
+TransactionSchema.index(
+  { mirror_of: 1 },
+  { unique: true, partialFilterExpression: { mirror_of: { $type: "objectId" } } }
+);
 
 const Transaction = mongoose.model("Transaction", TransactionSchema);
 

@@ -41,6 +41,8 @@ export const STATUS_CODES = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
+  CONFLICT: 409,
+  TOO_MANY_REQUESTS: 429,
   INTERNAL_SERVER_ERROR: 500,
 };
 
@@ -69,6 +71,14 @@ export const MESSAGES = {
     INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
     INVALID_EXPENSE_DATE: "Expense date is invalid",
     NOTE_NOT_FOUND: "Note not found",
+    LINK_NOT_FOUND: "Link request not found",
+    LINK_CUSTOMER_NOT_ON_APP: "This customer is not on Accountly yet",
+    LINK_ALREADY_EXISTS: "A link with this customer already exists or is pending",
+    LINK_UNAVAILABLE: "Unable to send a link request to this customer",
+    LINK_INVALID_STATE: "This link request can no longer be changed",
+    LINK_PHONE_LOCKED: "Unlink this customer before changing the phone number",
+    MIRRORED_READ_ONLY: "This entry was added by the linked business and cannot be changed here",
+    TOO_MANY_REQUESTS: "Too many requests, please try again later",
   },
 };
 

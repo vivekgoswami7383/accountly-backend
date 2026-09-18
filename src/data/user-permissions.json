@@ -22,7 +22,8 @@
       "note.create",
       "notes.get",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "link.manage"
     ]
   },
   {
@@ -47,7 +48,8 @@
       "note.create",
       "notes.get",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "link.manage"
     ]
   },
   {
@@ -68,7 +70,8 @@
       "note.create",
       "notes.get",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "link.manage"
     ]
   },
   {
