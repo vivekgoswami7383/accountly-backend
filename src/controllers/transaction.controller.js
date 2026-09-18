@@ -266,7 +266,7 @@ export const report = async (req, res) => {
         { $match: { absBalance: { $gt: 0 } } },
         { $sort: { absBalance: -1 } },
         { $limit: 5 },
-        { $project: { name: 1, phone: 1, balance: 1 } },
+        { $project: { name: 1, phone: 1, balance: 1, link_status: 1 } },
       ]),
     ]);
 
