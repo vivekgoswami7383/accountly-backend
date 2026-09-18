@@ -6,6 +6,8 @@ import {
   accept,
   decline,
   block,
+  blocked,
+  unblock,
   unlink,
   resync,
 } from "../controllers/link.controller.js";
@@ -21,10 +23,12 @@ const requestLimit = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 30 });
 
 router.get("/lookup", ...canManage, lookupLimit, lookup);
 router.get("/incoming", ...canManage, incoming);
+router.get("/blocked", ...canManage, blocked);
 router.post("/request", ...canManage, requestLimit, request);
 router.post("/:id/accept", ...canManage, accept);
 router.post("/:id/decline", ...canManage, decline);
 router.post("/:id/block", ...canManage, block);
+router.post("/:id/unblock", ...canManage, unblock);
 router.post("/:id/unlink", ...canManage, unlink);
 router.post("/:id/resync", ...canManage, resync);
 

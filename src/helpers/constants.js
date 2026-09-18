@@ -75,6 +75,7 @@ export const MESSAGES = {
     LINK_CUSTOMER_NOT_ON_APP: "This customer is not on Accountly yet",
     LINK_ALREADY_EXISTS: "A link with this customer already exists or is pending",
     LINK_UNAVAILABLE: "Unable to send a link request to this customer",
+    LINK_BLOCKED_BY_YOU: "You blocked this business. Unblock it from Link requests to link again",
     LINK_INVALID_STATE: "This link request can no longer be changed",
     LINK_PHONE_LOCKED: "Unlink this customer before changing the phone number",
     MIRRORED_READ_ONLY: "This entry was added by the linked business and cannot be changed here",

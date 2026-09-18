@@ -115,10 +115,14 @@ export const request = async (req, res) => {
 
     if (existing) {
       if (existing.status === LINK_STATUS.BLOCKED) {
+        const blockedByMe =
+          String(existing.blocked_by_business_id) === String(business_id);
         return fail(
           res,
           STATUS_CODES.FORBIDDEN,
-          MESSAGES.ERROR_MESSAGES.LINK_UNAVAILABLE
+          blockedByMe
+            ? MESSAGES.ERROR_MESSAGES.LINK_BLOCKED_BY_YOU
+            : MESSAGES.ERROR_MESSAGES.LINK_UNAVAILABLE
         );
       }
       if (
@@ -328,6 +332,69 @@ export const block = async (req, res) => {
     await endLink(link, LINK_STATUS.BLOCKED, {
       responded_by: req.user._id,
       blocked_by_business_id: req.user.business_id,
+    });
+    return res.status(STATUS_CODES.SUCCESS).json({ success: true, data: {} });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const blocked = async (req, res) => {
+  try {
+    const { business_id } = req.user;
+    const links = await Link.find({
+      blocked_by_business_id: business_id,
+      status: LINK_STATUS.BLOCKED,
+    })
+      .sort({ updated_at: -1 })
+      .limit(100)
+      .lean();
+
+    const otherIds = links.map((link) =>
+      String(link.requester_business_id) === String(business_id)
+        ? link.target_business_id
+        : link.requester_business_id
+    );
+    const businesses = await Business.find({ _id: { $in: otherIds } })
+      .select("business_name")
+      .lean();
+    const nameById = new Map(
+      businesses.map((business) => [String(business._id), business.business_name])
+    );
+
+    return res.status(STATUS_CODES.SUCCESS).json({
+      success: true,
+      data: {
+        blocked: links.map((link, index) => ({
+          id: link._id,
+          business_name: nameById.get(String(otherIds[index])) || "",
+          blocked_at: link.updated_at,
+        })),
+      },
+    });
+  } catch (error) {
+    return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+export const unblock = async (req, res) => {
+  try {
+    const link = await Link.findOne({
+      _id: req.params.id,
+      status: LINK_STATUS.BLOCKED,
+      blocked_by_business_id: req.user.business_id,
+    });
+    if (!link) {
+      return fail(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        MESSAGES.ERROR_MESSAGES.LINK_NOT_FOUND
+      );
+    }
+
+    await endLink(link, LINK_STATUS.UNLINKED, {
+      responded_by: req.user._id,
+      blocked_by_business_id: null,
     });
     return res.status(STATUS_CODES.SUCCESS).json({ success: true, data: {} });
   } catch (error) {
