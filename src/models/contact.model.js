@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { STATUS } from "../helpers/constants.js";
+import { CONTACT_TYPES, STATUS } from "../helpers/constants.js";
 
-const CustomerSchema = new mongoose.Schema(
+const ContactSchema = new mongoose.Schema(
   {
     business_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -28,6 +28,11 @@ const CustomerSchema = new mongoose.Schema(
       default: "",
     },
     image_key: { type: String, default: null },
+    type: {
+      type: String,
+      enum: [...CONTACT_TYPES, null],
+      default: null,
+    },
     status: {
       type: Number,
       enum: [STATUS.ACTIVE, STATUS.INACTIVE, STATUS.DELETED],
@@ -40,8 +45,8 @@ const CustomerSchema = new mongoose.Schema(
   }
 );
 
-CustomerSchema.index({ business_id: 1, phone: 1 }, { unique: true });
+ContactSchema.index({ business_id: 1, phone: 1 }, { unique: true });
 
-const Customer = mongoose.model("Customer", CustomerSchema);
+const Contact = mongoose.model("Contact", ContactSchema);
 
-export default Customer;
+export default Contact;

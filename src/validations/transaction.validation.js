@@ -3,7 +3,7 @@ import { MAX_AMOUNT } from "../helpers/constants.js";
 
 export const createTransactionSchema = Joi.object({
   business: Joi.forbidden(),
-  customer: Joi.object({
+  contact: Joi.object({
     _id: Joi.string().required(),
     name: Joi.string().optional(),
   })

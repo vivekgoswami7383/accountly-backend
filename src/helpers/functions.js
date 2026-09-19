@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import { env } from "../config/env.config.js";
 import { logger } from "../config/logger.config.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import BusinessStats from "../models/business-stats.model.js";
 import { STATUS, TRANSACTION_TYPE_ALIASES } from "./constants.js";
@@ -154,17 +154,17 @@ export const adjustBusinessStats = async (businessId, delta) => {
   );
 };
 
-export const recomputeCustomerBalance = async (
-  customerId,
+export const recomputeContactBalance = async (
+  contactId,
   { transactionCountDelta = 0 } = {}
 ) => {
-  const customer = await Customer.findById(customerId);
-  const oldBalance = customer?.balance || 0;
+  const contact = await Contact.findById(contactId);
+  const oldBalance = contact?.balance || 0;
 
   const [totals] = await Transaction.aggregate([
     {
       $match: {
-        "customer._id": new mongoose.Types.ObjectId(String(customerId)),
+        "contact._id": new mongoose.Types.ObjectId(String(contactId)),
         status: { $ne: STATUS.DELETED },
       },
     },
@@ -195,13 +195,13 @@ export const recomputeCustomerBalance = async (
 
   const newBalance = (totals?.credit || 0) - (totals?.debit || 0);
 
-  await Customer.findByIdAndUpdate(customerId, { balance: newBalance });
+  await Contact.findByIdAndUpdate(contactId, { balance: newBalance });
 
-  if (customer?.business_id) {
+  if (contact?.business_id) {
     const before = balanceBucket(oldBalance);
     const after = balanceBucket(newBalance);
 
-    await adjustBusinessStats(customer.business_id, {
+    await adjustBusinessStats(contact.business_id, {
       receivable: after.get - before.get,
       payable: after.give - before.give,
       total_transactions: transactionCountDelta,

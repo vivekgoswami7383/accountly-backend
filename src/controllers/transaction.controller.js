@@ -3,11 +3,11 @@ import { MAX_AMOUNT, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants
 import {
   getSearchFilterQuery,
   normalizeTransactionType,
-  recomputeCustomerBalance,
+  recomputeContactBalance,
 } from "../helpers/functions.js";
 import { getSignedUrlFor } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 
 const withAttachmentUrl = async (transaction) => {
   const obj = transaction.toObject ? transaction.toObject() : transaction;
@@ -17,7 +17,7 @@ const withAttachmentUrl = async (transaction) => {
 export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const { customer, amount, description, payment_mode, transaction_date } =
+    const { contact, amount, description, payment_mode, transaction_date } =
       req.body;
 
     const transaction_type = normalizeTransactionType(
@@ -44,22 +44,22 @@ export const create = async (req, res) => {
       });
     }
 
-    const customerDoc = await Customer.findOne({
-      _id: customer?._id,
+    const contactDoc = await Contact.findOne({
+      _id: contact?._id,
       business_id,
       status: { $ne: STATUS.DELETED },
     });
 
-    if (!customerDoc) {
+    if (!contactDoc) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
-        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND,
+        message: MESSAGES.ERROR_MESSAGES.CONTACT_NOT_FOUND,
       });
     }
 
     const transaction = await Transaction.create({
       business_id,
-      customer: { _id: customerDoc._id, name: customerDoc.name },
+      contact: { _id: contactDoc._id, name: contactDoc.name },
       amount,
       transaction_type,
       payment_mode,
@@ -67,13 +67,13 @@ export const create = async (req, res) => {
       ...(transaction_date ? { created_at: new Date(transaction_date) } : {}),
     });
 
-    const customer_balance = await recomputeCustomerBalance(customerDoc._id, {
+    const contact_balance = await recomputeContactBalance(contactDoc._id, {
       transactionCountDelta: 1,
     });
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { transaction: await withAttachmentUrl(transaction), customer_balance },
+      data: { transaction: await withAttachmentUrl(transaction), contact_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -130,27 +130,27 @@ export const transactions = async (req, res) => {
   }
 };
 
-export const customerTransactions = async (req, res) => {
+export const contactTransactions = async (req, res) => {
   const { business_id } = req.user;
-  const { customer_id } = req.params;
+  const { contact_id } = req.params;
 
   try {
-    const [transactions, customer] = await Promise.all([
+    const [transactions, contact] = await Promise.all([
       Transaction.find({
         business_id,
-        "customer._id": customer_id,
+        "contact._id": contact_id,
         status: { $ne: STATUS.DELETED },
       }).sort({ created_at: 1 }),
-      Customer.findOne({
-        _id: customer_id,
+      Contact.findOne({
+        _id: contact_id,
         business_id,
       }),
     ]);
 
-    if (!customer) {
+    if (!contact) {
       return res.status(STATUS_CODES.NOT_FOUND).json({
         success: false,
-        message: MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND,
+        message: MESSAGES.ERROR_MESSAGES.CONTACT_NOT_FOUND,
       });
     }
 
@@ -174,7 +174,7 @@ export const customerTransactions = async (req, res) => {
       data: {
         transactions: withBalance,
         total_transactions: withBalance.length,
-        customer_balance: customer.balance,
+        contact_balance: contact.balance,
       },
     });
   } catch (error) {
@@ -202,7 +202,7 @@ export const report = async (req, res) => {
 
     const businessObjectId = new mongoose.Types.ObjectId(String(business_id));
 
-    const [txResult, topCustomers] = await Promise.all([
+    const [txResult, topContacts] = await Promise.all([
       Transaction.aggregate([
         {
           $match: {
@@ -252,7 +252,7 @@ export const report = async (req, res) => {
           },
         },
       ]),
-      Customer.aggregate([
+      Contact.aggregate([
         { $match: { business_id: businessObjectId, status: { $ne: STATUS.DELETED } } },
         { $addFields: { absBalance: { $abs: "$balance" } } },
         { $match: { absBalance: { $gt: 0 } } },
@@ -279,7 +279,7 @@ export const report = async (req, res) => {
           transaction_count: totals.transaction_count,
         },
         daily,
-        top_customers: topCustomers,
+        top_contacts: topContacts,
       },
     });
   } catch (error) {
@@ -389,13 +389,13 @@ export const update = async (req, res) => {
       updateOptions
     );
 
-    const customer_balance = await recomputeCustomerBalance(
-      updated.customer._id
+    const contact_balance = await recomputeContactBalance(
+      updated.contact._id
     );
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { transaction: await withAttachmentUrl(updated), customer_balance },
+      data: { transaction: await withAttachmentUrl(updated), contact_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -424,14 +424,14 @@ export const remove = async (req, res) => {
 
     await Transaction.findByIdAndUpdate(id, { status: STATUS.DELETED });
 
-    const customer_balance = await recomputeCustomerBalance(
-      transaction.customer._id,
+    const contact_balance = await recomputeContactBalance(
+      transaction.contact._id,
       { transactionCountDelta: -1 }
     );
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { customer_balance },
+      data: { contact_balance },
     });
   } catch (error) {
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({

@@ -11,13 +11,13 @@
     ]
   },
   {
-    "key": "customer",
-    "name": "Customer",
+    "key": "contact",
+    "name": "Contact",
     "permissions": [
-      "customer.create",
-      "customers.get",
-      "customer.update",
-      "customer.delete"
+      "contact.create",
+      "contacts.get",
+      "contact.update",
+      "contact.delete"
     ]
   },
   {
@@ -25,7 +25,7 @@
     "name": "Transaction",
     "permissions": [
       "transaction.create",
-      "transactions.get_customer",
+      "transactions.get_contact",
       "transactions.get",
       "transaction.update",
       "transaction.delete"

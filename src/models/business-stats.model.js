@@ -16,7 +16,7 @@ const BusinessStatsSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    customer_count: {
+    contact_count: {
       type: Number,
       default: 0,
     },

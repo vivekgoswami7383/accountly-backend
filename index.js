@@ -6,6 +6,8 @@ import passport from "passport";
 import { env } from "./src/config/env.config.js";
 import { logger } from "./src/config/logger.config.js";
 import { databaseConnection } from "./src/config/database.config.js";
+import mongoose from "mongoose";
+import { runMigrations } from "./src/migrations/index.js";
 import { STATUS_CODES } from "./src/helpers/constants.js";
 
 import "./src/config/load.models.js";
@@ -28,6 +30,10 @@ app.get("/health", (req, res) => {
 });
 
 databaseConnection()
+  .then(() => Promise.all(Object.values(mongoose.models).map((model) => model.init())))
+  .then(() =>
+    runMigrations(mongoose.connection.db, (message) => logger.info(message))
+  )
   .then(() => {
     app.listen(env.PORT, "0.0.0.0", () => {
       logger.info(`Server is running on port ${env.PORT}`);
@@ -36,5 +42,6 @@ databaseConnection()
     });
   })
   .catch((error) => {
-    console.log("Database error", error.message);
+    logger.error(`Startup failed: ${error.message}`);
+    process.exit(1);
   });
