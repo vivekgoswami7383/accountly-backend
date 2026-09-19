@@ -32,9 +32,9 @@ export const EXPENSE_CATEGORIES = {
   OTHER: "other",
 };
 
-export const CONTACT_LABELS = ["customer", "supplier", "friend", "family"];
+export const CONTACT_TYPES = ["customer", "supplier", "friend", "family"];
 
-export const INVERSE_CONTACT_LABEL = {
+export const INVERSE_CONTACT_TYPE = {
   customer: "supplier",
   supplier: "customer",
   friend: "friend",
@@ -80,7 +80,7 @@ export const MESSAGES = {
     INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
     INVALID_EXPENSE_DATE: "Expense date is invalid",
     NOTE_NOT_FOUND: "Note not found",
-    INVALID_CONTACT_LABEL: "Label must be customer, supplier, friend or family",
+    INVALID_CONTACT_TYPE: "Contact type must be customer, supplier, friend or family",
     LINK_NOT_FOUND: "Link request not found",
     LINK_CONTACT_NOT_ON_APP: "This contact is not on Accountly yet",
     LINK_ALREADY_EXISTS: "A link with this contact already exists or is pending",

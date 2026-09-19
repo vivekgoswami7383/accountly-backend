@@ -69,8 +69,11 @@ export const up = async (db, log = () => {}) => {
 
   const labelled = await db
     .collection("contacts")
-    .updateMany({ label: { $exists: false } }, { $set: { label: "customer" } });
-  summary.contacts_labelled_customer = labelled.modifiedCount;
+    .updateMany(
+      { contact_type: { $exists: false }, label: { $exists: false } },
+      { $set: { contact_type: "customer" } }
+    );
+  summary.contacts_typed_customer = labelled.modifiedCount;
 
   log(`${NAME}: ${JSON.stringify(summary)}`);
   return summary;

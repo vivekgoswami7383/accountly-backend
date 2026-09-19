@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import {
-  INVERSE_CONTACT_LABEL,
+  INVERSE_CONTACT_TYPE,
   MESSAGES,
   STATUS,
   STATUS_CODES,
@@ -273,8 +273,8 @@ export const accept = async (req, res) => {
     const requesterContact = await Contact.findById(
       link.requester_contact_id
     ).lean();
-    const inverseLabel =
-      INVERSE_CONTACT_LABEL[requesterContact?.label] || null;
+    const inverseType =
+      INVERSE_CONTACT_TYPE[requesterContact?.contact_type] || null;
 
     let counterpart = await Contact.findOne({
       business_id,
@@ -286,7 +286,7 @@ export const accept = async (req, res) => {
         business_id,
         name: requesterBusiness.business_name,
         phone: requesterOwner.phone,
-        label: inverseLabel,
+        contact_type: inverseType,
       });
       await adjustBusinessStats(business_id, { contact_count: 1 });
     } else if (counterpart.status === STATUS.DELETED) {
@@ -296,7 +296,7 @@ export const accept = async (req, res) => {
           status: STATUS.ACTIVE,
           balance: 0,
           name: requesterBusiness.business_name,
-          label: inverseLabel,
+          contact_type: inverseType,
         },
         { new: true }
       );

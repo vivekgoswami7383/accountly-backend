@@ -1,6 +1,7 @@
 import renameCustomerToContact from "./001-rename-customer-to-contact.js";
+import renameLabelToContactType from "./002-rename-label-to-contact-type.js";
 
-const MIGRATIONS = [renameCustomerToContact];
+const MIGRATIONS = [renameCustomerToContact, renameLabelToContactType];
 
 export const runMigrations = async (db, log = () => {}) => {
   const applied = db.collection("migrations");

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { CONTACT_LABELS, STATUS } from "../helpers/constants.js";
+import { CONTACT_TYPES, STATUS } from "../helpers/constants.js";
 
 const ContactSchema = new mongoose.Schema(
   {
@@ -38,9 +38,9 @@ const ContactSchema = new mongoose.Schema(
       enum: ["pending", "active", null],
       default: null,
     },
-    label: {
+    contact_type: {
       type: String,
-      enum: [...CONTACT_LABELS, null],
+      enum: [...CONTACT_TYPES, null],
       default: null,
     },
     status: {

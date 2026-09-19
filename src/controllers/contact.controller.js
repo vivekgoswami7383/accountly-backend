@@ -1,4 +1,4 @@
-import { CONTACT_LABELS, MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import { CONTACT_TYPES, MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
@@ -16,7 +16,9 @@ export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
     const { phone, name, address } = req.body;
-    const label = CONTACT_LABELS.includes(req.body.label) ? req.body.label : null;
+    const contact_type = CONTACT_TYPES.includes(req.body.contact_type)
+      ? req.body.contact_type
+      : null;
 
     const contact = await Contact.findOne({
       phone,
@@ -34,7 +36,7 @@ export const create = async (req, res) => {
       if (contact.status === STATUS.DELETED) {
         const updatedContact = await Contact.findByIdAndUpdate(
           contact._id,
-          { status: STATUS.ACTIVE, balance: 0, name, address, label },
+          { status: STATUS.ACTIVE, balance: 0, name, address, contact_type },
           { new: true }
         );
 
@@ -52,7 +54,7 @@ export const create = async (req, res) => {
       name,
       phone,
       address,
-      label,
+      contact_type,
     });
 
     await adjustBusinessStats(business_id, { contact_count: 1 });
@@ -75,10 +77,10 @@ export const contacts = async (req, res) => {
 
   try {
     const baseFilter = { business_id, status: STATUS.ACTIVE };
-    if (CONTACT_LABELS.includes(req.query.label)) {
-      baseFilter.label = req.query.label;
-    } else if (req.query.label === "none") {
-      baseFilter.label = null;
+    if (CONTACT_TYPES.includes(req.query.contact_type)) {
+      baseFilter.contact_type = req.query.contact_type;
+    } else if (req.query.contact_type === "none") {
+      baseFilter.contact_type = null;
     }
 
     if (page || limit) {
@@ -181,12 +183,12 @@ export const update = async (req, res) => {
       }
     }
 
-    const labelProvided = req.body.label !== undefined;
-    const nextLabel = req.body.label || null;
-    if (labelProvided && nextLabel !== null && !CONTACT_LABELS.includes(nextLabel)) {
+    const typeProvided = req.body.contact_type !== undefined;
+    const nextType = req.body.contact_type || null;
+    if (typeProvided && nextType !== null && !CONTACT_TYPES.includes(nextType)) {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
         success: false,
-        message: MESSAGES.ERROR_MESSAGES.INVALID_CONTACT_LABEL,
+        message: MESSAGES.ERROR_MESSAGES.INVALID_CONTACT_TYPE,
       });
     }
 
@@ -201,7 +203,7 @@ export const update = async (req, res) => {
     if (req.body.name != null) patch.name = req.body.name;
     if (req.body.phone != null) patch.phone = req.body.phone;
     if (req.body.address != null) patch.address = req.body.address;
-    if (labelProvided) patch.label = nextLabel;
+    if (typeProvided) patch.contact_type = nextType;
     if (req.body.image_key != null) patch.image_key = req.body.image_key;
 
     const updatedContact = await Contact.findByIdAndUpdate(id, patch, {
