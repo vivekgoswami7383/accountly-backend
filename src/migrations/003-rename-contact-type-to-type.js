@@ -1,11 +1,11 @@
-const NAME = "002-rename-label-to-contact-type";
+const NAME = "003-rename-contact-type-to-type";
 
 export const up = async (db, log = () => {}) => {
   const renamed = await db
     .collection("contacts")
     .updateMany(
-      { label: { $exists: true }, type: { $exists: false } },
-      { $rename: { label: "type" } }
+      { contact_type: { $exists: true }, type: { $exists: false } },
+      { $rename: { contact_type: "type" } }
     );
   const summary = { contacts_renamed: renamed.modifiedCount };
   log(`${NAME}: ${JSON.stringify(summary)}`);

@@ -38,7 +38,7 @@ const ContactSchema = new mongoose.Schema(
       enum: ["pending", "active", null],
       default: null,
     },
-    contact_type: {
+    type: {
       type: String,
       enum: [...CONTACT_TYPES, null],
       default: null,

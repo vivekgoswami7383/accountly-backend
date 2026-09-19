@@ -70,8 +70,12 @@ export const up = async (db, log = () => {}) => {
   const labelled = await db
     .collection("contacts")
     .updateMany(
-      { contact_type: { $exists: false }, label: { $exists: false } },
-      { $set: { contact_type: "customer" } }
+      {
+        type: { $exists: false },
+        contact_type: { $exists: false },
+        label: { $exists: false },
+      },
+      { $set: { type: "customer" } }
     );
   summary.contacts_typed_customer = labelled.modifiedCount;
 

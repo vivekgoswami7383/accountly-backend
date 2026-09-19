@@ -274,7 +274,7 @@ export const accept = async (req, res) => {
       link.requester_contact_id
     ).lean();
     const inverseType =
-      INVERSE_CONTACT_TYPE[requesterContact?.contact_type] || null;
+      INVERSE_CONTACT_TYPE[requesterContact?.type] || null;
 
     let counterpart = await Contact.findOne({
       business_id,
@@ -286,7 +286,7 @@ export const accept = async (req, res) => {
         business_id,
         name: requesterBusiness.business_name,
         phone: requesterOwner.phone,
-        contact_type: inverseType,
+        type: inverseType,
       });
       await adjustBusinessStats(business_id, { contact_count: 1 });
     } else if (counterpart.status === STATUS.DELETED) {
@@ -296,7 +296,7 @@ export const accept = async (req, res) => {
           status: STATUS.ACTIVE,
           balance: 0,
           name: requesterBusiness.business_name,
-          contact_type: inverseType,
+          type: inverseType,
         },
         { new: true }
       );

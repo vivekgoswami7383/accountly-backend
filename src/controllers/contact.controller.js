@@ -16,9 +16,7 @@ export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
     const { phone, name, address } = req.body;
-    const contact_type = CONTACT_TYPES.includes(req.body.contact_type)
-      ? req.body.contact_type
-      : null;
+    const type = CONTACT_TYPES.includes(req.body.type) ? req.body.type : null;
 
     const contact = await Contact.findOne({
       phone,
@@ -36,7 +34,7 @@ export const create = async (req, res) => {
       if (contact.status === STATUS.DELETED) {
         const updatedContact = await Contact.findByIdAndUpdate(
           contact._id,
-          { status: STATUS.ACTIVE, balance: 0, name, address, contact_type },
+          { status: STATUS.ACTIVE, balance: 0, name, address, type },
           { new: true }
         );
 
@@ -54,7 +52,7 @@ export const create = async (req, res) => {
       name,
       phone,
       address,
-      contact_type,
+      type,
     });
 
     await adjustBusinessStats(business_id, { contact_count: 1 });
@@ -77,10 +75,10 @@ export const contacts = async (req, res) => {
 
   try {
     const baseFilter = { business_id, status: STATUS.ACTIVE };
-    if (CONTACT_TYPES.includes(req.query.contact_type)) {
-      baseFilter.contact_type = req.query.contact_type;
-    } else if (req.query.contact_type === "none") {
-      baseFilter.contact_type = null;
+    if (CONTACT_TYPES.includes(req.query.type)) {
+      baseFilter.type = req.query.type;
+    } else if (req.query.type === "none") {
+      baseFilter.type = null;
     }
 
     if (page || limit) {
@@ -183,8 +181,8 @@ export const update = async (req, res) => {
       }
     }
 
-    const typeProvided = req.body.contact_type !== undefined;
-    const nextType = req.body.contact_type || null;
+    const typeProvided = req.body.type !== undefined;
+    const nextType = req.body.type || null;
     if (typeProvided && nextType !== null && !CONTACT_TYPES.includes(nextType)) {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
         success: false,
@@ -203,7 +201,7 @@ export const update = async (req, res) => {
     if (req.body.name != null) patch.name = req.body.name;
     if (req.body.phone != null) patch.phone = req.body.phone;
     if (req.body.address != null) patch.address = req.body.address;
-    if (typeProvided) patch.contact_type = nextType;
+    if (typeProvided) patch.type = nextType;
     if (req.body.image_key != null) patch.image_key = req.body.image_key;
 
     const updatedContact = await Contact.findByIdAndUpdate(id, patch, {
