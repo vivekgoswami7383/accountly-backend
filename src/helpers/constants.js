@@ -48,8 +48,6 @@ export const INVERSE_CONTACT_TYPE = {
   family: "family",
 };
 
-export const MAX_HISTORY_IMPORT = 20000;
-
 export const MAX_AMOUNT = 999999999999;
 export const MAX_NAME_LENGTH = 60;
 
@@ -90,7 +88,6 @@ export const MESSAGES = {
     INVALID_EXPENSE_DATE: "Expense date is invalid",
     NOTE_NOT_FOUND: "Note not found",
     INVALID_CONTACT_TYPE: "Contact type must be customer, supplier, business, friend or family",
-    HISTORY_TOO_LARGE: "Too many past entries to share (limit is 20,000). Clear old entries or link without history",
     IMPORT_NOT_ALLOWED: "Past entries cannot be imported for this link right now",
     LINK_NOT_FOUND: "Link request not found",
     LINK_CONTACT_NOT_ON_APP: "This contact is not on Accountly yet",

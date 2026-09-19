@@ -11,14 +11,10 @@ import Contact from "../models/contact.model.js";
 import Link, { LINK_STATUS } from "../models/link.model.js";
 import {
   buildPairKey,
-  countShareableHistory,
   endLink,
-  importLinkHistory,
-  isHistoryTooLarge,
   resyncLink,
   startHistoryImport,
 } from "../services/ledger-link.service.js";
-import Transaction from "../models/transaction.model.js";
 
 const User = mongoose.model("User");
 const Business = mongoose.model("Business");
@@ -50,44 +46,6 @@ const serializeLink = (link) => ({
   accepted_at: link.accepted_at,
   share_history: Boolean(link.share_history),
 });
-
-const receiverExistingCount = async (link) => {
-  const requesterBusiness = await Business.findById(
-    link.requester_business_id
-  ).lean();
-  const requesterOwner = requesterBusiness
-    ? await User.findById(requesterBusiness.user._id).lean()
-    : null;
-  if (!requesterOwner) return 0;
-
-  const existing = await Contact.findOne({
-    business_id: link.target_business_id,
-    phone: requesterOwner.phone,
-    status: STATUS.ACTIVE,
-  }).lean();
-  if (!existing) return 0;
-
-  return Transaction.countDocuments({
-    "contact._id": existing._id,
-    status: STATUS.ACTIVE,
-    mirror_of: null,
-  });
-};
-
-const historyPreview = async (link) => {
-  if (!link.share_history) {
-    return { share_history: false, history_count: 0, existing_count: 0 };
-  }
-  const [historyCount, existingCount] = await Promise.all([
-    countShareableHistory(link.requester_contact_id),
-    receiverExistingCount(link),
-  ]);
-  return {
-    share_history: true,
-    history_count: historyCount,
-    existing_count: existingCount,
-  };
-};
 
 const findOwnedContact = (business_id, id) =>
   Contact.findOne({ _id: id, business_id, status: STATUS.ACTIVE });
@@ -128,23 +86,11 @@ export const lookup = async (req, res) => {
       target_business_id: business_id,
     }).lean();
 
-    if (pending) {
-      return res.status(STATUS_CODES.SUCCESS).json({
-        success: true,
-        data: {
-          status: "incoming",
-          link_id: pending._id,
-          ...(await historyPreview(pending)),
-        },
-      });
-    }
-
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: {
-        status: "available",
-        history_count: await countShareableHistory(contact._id),
-      },
+      data: pending
+        ? { status: "incoming", link_id: pending._id }
+        : { status: "available" },
     });
   } catch (error) {
     return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);
@@ -180,18 +126,6 @@ export const request = async (req, res) => {
         STATUS_CODES.NOT_FOUND,
         MESSAGES.ERROR_MESSAGES.LINK_CONTACT_NOT_ON_APP
       );
-    }
-
-    const shareHistory = req.body.share_history === true;
-    if (shareHistory) {
-      const historyCount = await countShareableHistory(contact._id);
-      if (isHistoryTooLarge(historyCount)) {
-        return fail(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          MESSAGES.ERROR_MESSAGES.HISTORY_TOO_LARGE
-        );
-      }
     }
 
     const pairKey = buildPairKey(business_id, target.business._id);
@@ -230,7 +164,7 @@ export const request = async (req, res) => {
       responded_by: null,
       blocked_by_business_id: null,
       accepted_at: null,
-      share_history: shareHistory,
+      share_history: true,
       import_status: "none",
       import_total: 0,
       import_done: 0,
@@ -283,17 +217,14 @@ export const incoming = async (req, res) => {
       businesses.map((business) => [String(business._id), business.business_name])
     );
 
-    const previews = await Promise.all(links.map(historyPreview));
-
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
       data: {
-        requests: links.map((link, index) => ({
+        requests: links.map((link) => ({
           id: link._id,
           business_name:
             nameById.get(String(link.requester_business_id)) || "",
           requested_at: link.created_at,
-          ...previews[index],
         })),
       },
     });
@@ -332,19 +263,7 @@ export const accept = async (req, res) => {
     const link = await loadPendingForTarget(req, res);
     if (!link) return null;
 
-    const importHistory = req.body.import_history === true && link.share_history;
-    if (importHistory) {
-      const historyCount = await countShareableHistory(
-        link.requester_contact_id
-      );
-      if (isHistoryTooLarge(historyCount)) {
-        return fail(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          MESSAGES.ERROR_MESSAGES.HISTORY_TOO_LARGE
-        );
-      }
-    }
+    const importHistory = Boolean(link.share_history);
 
     const requesterBusiness = await Business.findById(
       link.requester_business_id

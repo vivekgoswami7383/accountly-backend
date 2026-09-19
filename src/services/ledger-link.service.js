@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
-import {
-  MAX_HISTORY_IMPORT,
-  STATUS,
-  TRANSACTION_TYPES,
-} from "../helpers/constants.js";
+import { STATUS, TRANSACTION_TYPES } from "../helpers/constants.js";
 import { recomputeContactBalance } from "../helpers/functions.js";
 import { logger } from "../config/logger.config.js";
 import Contact from "../models/contact.model.js";
@@ -180,11 +176,6 @@ export const shareableHistoryFilter = (contactId) => ({
   mirror_of: null,
   mirrored_transaction_id: null,
 });
-
-export const countShareableHistory = (contactId) =>
-  Transaction.countDocuments(shareableHistoryFilter(contactId));
-
-export const isHistoryTooLarge = (count) => count > MAX_HISTORY_IMPORT;
 
 export const importLinkHistory = async (linkId) => {
   const claimed = await Link.findOneAndUpdate(
