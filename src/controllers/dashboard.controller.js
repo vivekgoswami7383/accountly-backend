@@ -2,11 +2,11 @@ import { STATUS_CODES, STATUS, MESSAGES } from "../helpers/constants.js";
 import { getSignedUrlFor } from "../utils/s3.js";
 import Business from "../models/business.model.js";
 import BusinessStats from "../models/business-stats.model.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 
-const withImageUrl = async (customer) => {
-  const obj = customer.toObject ? customer.toObject() : customer;
+const withImageUrl = async (contact) => {
+  const obj = contact.toObject ? contact.toObject() : contact;
   return { ...obj, image_url: await getSignedUrlFor(obj.image_key) };
 };
 
@@ -26,9 +26,9 @@ export const statistics = async (req, res) => {
       });
     }
 
-    const [stats, customers, transactions] = await Promise.all([
+    const [stats, contacts, transactions] = await Promise.all([
       BusinessStats.findOne({ business_id: business._id }),
-      Customer.find({ business_id: business._id, status: STATUS.ACTIVE })
+      Contact.find({ business_id: business._id, status: STATUS.ACTIVE })
         .sort({ updated_at: -1 })
         .limit(3),
       Transaction.find({
@@ -49,10 +49,10 @@ export const statistics = async (req, res) => {
           receivable,
           payable,
           net: receivable - payable,
-          customer_count: stats?.customer_count || 0,
+          contact_count: stats?.contact_count || 0,
           total_transactions: stats?.total_transactions || 0,
         },
-        recent_customers: await Promise.all(customers.map(withImageUrl)),
+        recent_contacts: await Promise.all(contacts.map(withImageUrl)),
         recent_transactions: transactions,
       },
     });

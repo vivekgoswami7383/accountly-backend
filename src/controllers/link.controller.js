@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 import {
+  INVERSE_CONTACT_LABEL,
   MESSAGES,
   STATUS,
   STATUS_CODES,
   USER_ROLES,
 } from "../helpers/constants.js";
 import { adjustBusinessStats } from "../helpers/functions.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 import Link, { LINK_STATUS } from "../models/link.model.js";
 import {
   buildPairKey,
@@ -44,32 +45,32 @@ const serializeLink = (link) => ({
   accepted_at: link.accepted_at,
 });
 
-const findOwnedCustomer = (business_id, id) =>
-  Customer.findOne({ _id: id, business_id, status: STATUS.ACTIVE });
+const findOwnedContact = (business_id, id) =>
+  Contact.findOne({ _id: id, business_id, status: STATUS.ACTIVE });
 
 export const lookup = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const customer = await findOwnedCustomer(
+    const contact = await findOwnedContact(
       business_id,
-      req.query.customer_id
+      req.query.contact_id
     );
-    if (!customer) {
+    if (!contact) {
       return fail(
         res,
         STATUS_CODES.NOT_FOUND,
-        MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND
+        MESSAGES.ERROR_MESSAGES.CONTACT_NOT_FOUND
       );
     }
 
-    if (customer.link_status) {
+    if (contact.link_status) {
       return res.status(STATUS_CODES.SUCCESS).json({
         success: true,
-        data: { status: customer.link_status, link_id: customer.link_id },
+        data: { status: contact.link_status, link_id: contact.link_id },
       });
     }
 
-    const target = await findLinkableTarget(customer.phone, business_id);
+    const target = await findLinkableTarget(contact.phone, business_id);
     if (!target) {
       return res.status(STATUS_CODES.SUCCESS).json({
         success: true,
@@ -97,18 +98,18 @@ export const lookup = async (req, res) => {
 export const request = async (req, res) => {
   try {
     const { business_id, _id: userId } = req.user;
-    const customer = await findOwnedCustomer(
+    const contact = await findOwnedContact(
       business_id,
-      req.body.customer_id
+      req.body.contact_id
     );
-    if (!customer) {
+    if (!contact) {
       return fail(
         res,
         STATUS_CODES.NOT_FOUND,
-        MESSAGES.ERROR_MESSAGES.CUSTOMER_NOT_FOUND
+        MESSAGES.ERROR_MESSAGES.CONTACT_NOT_FOUND
       );
     }
-    if (customer.link_id) {
+    if (contact.link_id) {
       return fail(
         res,
         STATUS_CODES.CONFLICT,
@@ -116,12 +117,12 @@ export const request = async (req, res) => {
       );
     }
 
-    const target = await findLinkableTarget(customer.phone, business_id);
+    const target = await findLinkableTarget(contact.phone, business_id);
     if (!target) {
       return fail(
         res,
         STATUS_CODES.NOT_FOUND,
-        MESSAGES.ERROR_MESSAGES.LINK_CUSTOMER_NOT_ON_APP
+        MESSAGES.ERROR_MESSAGES.LINK_CONTACT_NOT_ON_APP
       );
     }
 
@@ -155,8 +156,8 @@ export const request = async (req, res) => {
     const fields = {
       requester_business_id: business_id,
       target_business_id: target.business._id,
-      requester_customer_id: customer._id,
-      target_customer_id: null,
+      requester_contact_id: contact._id,
+      target_contact_id: null,
       requested_by: userId,
       responded_by: null,
       blocked_by_business_id: null,
@@ -168,8 +169,8 @@ export const request = async (req, res) => {
       ? await Link.findByIdAndUpdate(existing._id, fields, { new: true })
       : await Link.create({ pair_key: pairKey, ...fields });
 
-    await Customer.updateOne(
-      { _id: customer._id },
+    await Contact.updateOne(
+      { _id: contact._id },
       { $set: { link_id: link._id, link_status: LINK_STATUS.PENDING } }
     );
 
@@ -269,29 +270,37 @@ export const accept = async (req, res) => {
       );
     }
 
-    let counterpart = await Customer.findOne({
+    const requesterContact = await Contact.findById(
+      link.requester_contact_id
+    ).lean();
+    const inverseLabel =
+      INVERSE_CONTACT_LABEL[requesterContact?.label] || null;
+
+    let counterpart = await Contact.findOne({
       business_id,
       phone: requesterOwner.phone,
     });
 
     if (!counterpart) {
-      counterpart = await Customer.create({
+      counterpart = await Contact.create({
         business_id,
         name: requesterBusiness.business_name,
         phone: requesterOwner.phone,
+        label: inverseLabel,
       });
-      await adjustBusinessStats(business_id, { customer_count: 1 });
+      await adjustBusinessStats(business_id, { contact_count: 1 });
     } else if (counterpart.status === STATUS.DELETED) {
-      counterpart = await Customer.findByIdAndUpdate(
+      counterpart = await Contact.findByIdAndUpdate(
         counterpart._id,
         {
           status: STATUS.ACTIVE,
           balance: 0,
           name: requesterBusiness.business_name,
+          label: inverseLabel,
         },
         { new: true }
       );
-      await adjustBusinessStats(business_id, { customer_count: 1 });
+      await adjustBusinessStats(business_id, { contact_count: 1 });
     }
 
     if (counterpart.link_id) {
@@ -306,21 +315,21 @@ export const accept = async (req, res) => {
       link._id,
       {
         status: LINK_STATUS.ACTIVE,
-        target_customer_id: counterpart._id,
+        target_contact_id: counterpart._id,
         responded_by: userId,
         accepted_at: new Date(),
       },
       { new: true }
     );
 
-    await Customer.updateMany(
-      { _id: { $in: [link.requester_customer_id, counterpart._id] } },
+    await Contact.updateMany(
+      { _id: { $in: [link.requester_contact_id, counterpart._id] } },
       { $set: { link_id: link._id, link_status: LINK_STATUS.ACTIVE } }
     );
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
-      data: { link: serializeLink(updated), customer_id: counterpart._id },
+      data: { link: serializeLink(updated), contact_id: counterpart._id },
     });
   } catch (error) {
     return fail(res, STATUS_CODES.INTERNAL_SERVER_ERROR, error.message);

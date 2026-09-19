@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import { STATUS, TRANSACTION_TYPES } from "../helpers/constants.js";
-import { recomputeCustomerBalance } from "../helpers/functions.js";
+import { recomputeContactBalance } from "../helpers/functions.js";
 import { logger } from "../config/logger.config.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import Link, { LINK_STATUS } from "../models/link.model.js";
 
@@ -14,32 +14,32 @@ const invertType = (type) =>
 export const buildPairKey = (businessA, businessB) =>
   [String(businessA), String(businessB)].sort().join(":");
 
-const counterpartOf = (link, customerId) => {
+const counterpartOf = (link, contactId) => {
   const isRequesterSide =
-    String(link.requester_customer_id) === String(customerId);
+    String(link.requester_contact_id) === String(contactId);
   return isRequesterSide
     ? {
         businessId: link.target_business_id,
-        customerId: link.target_customer_id,
+        contactId: link.target_contact_id,
       }
     : {
         businessId: link.requester_business_id,
-        customerId: link.requester_customer_id,
+        contactId: link.requester_contact_id,
       };
 };
 
-const getActiveLink = async (customer) => {
-  if (!customer?.link_id || customer.link_status !== LINK_STATUS.ACTIVE) {
+const getActiveLink = async (contact) => {
+  if (!contact?.link_id || contact.link_status !== LINK_STATUS.ACTIVE) {
     return null;
   }
-  const link = await Link.findById(customer.link_id);
+  const link = await Link.findById(contact.link_id);
   return link?.status === LINK_STATUS.ACTIVE ? link : null;
 };
 
-export const clearCustomerLink = async (customerIds) => {
-  const ids = customerIds.filter(Boolean);
+export const clearContactLink = async (contactIds) => {
+  const ids = contactIds.filter(Boolean);
   if (!ids.length) return;
-  await Customer.updateMany(
+  await Contact.updateMany(
     { _id: { $in: ids } },
     { $set: { link_id: null, link_status: null } }
   );
@@ -50,26 +50,26 @@ export const endLink = async (link, nextStatus, extra = {}) => {
     { _id: link._id },
     { $set: { status: nextStatus, ...extra } }
   );
-  await clearCustomerLink([link.requester_customer_id, link.target_customer_id]);
+  await clearContactLink([link.requester_contact_id, link.target_contact_id]);
 };
 
-export const mirrorTransactionCreate = async (origin, customer) => {
+export const mirrorTransactionCreate = async (origin, contact) => {
   try {
     if (origin.mirror_of) return null;
-    const link = await getActiveLink(customer);
+    const link = await getActiveLink(contact);
     if (!link) return null;
 
-    const other = counterpartOf(link, customer._id);
-    const otherCustomer = await Customer.findOne({
-      _id: other.customerId,
+    const other = counterpartOf(link, contact._id);
+    const otherContact = await Contact.findOne({
+      _id: other.contactId,
       business_id: other.businessId,
       status: STATUS.ACTIVE,
     });
-    if (!otherCustomer) return null;
+    if (!otherContact) return null;
 
     const mirror = await Transaction.create({
       business_id: other.businessId,
-      customer: { _id: otherCustomer._id, name: otherCustomer.name },
+      contact: { _id: otherContact._id, name: otherContact.name },
       amount: origin.amount,
       transaction_type: invertType(origin.transaction_type),
       payment_mode: origin.payment_mode,
@@ -84,7 +84,7 @@ export const mirrorTransactionCreate = async (origin, customer) => {
       { $set: { mirrored_transaction_id: mirror._id, link_id: link._id } },
       { timestamps: false }
     );
-    await recomputeCustomerBalance(otherCustomer._id, {
+    await recomputeContactBalance(otherContact._id, {
       transactionCountDelta: 1,
     });
     return mirror;
@@ -112,7 +112,7 @@ export const mirrorTransactionUpdate = async (origin) => {
       },
       { new: true, timestamps: false, overwriteImmutable: true }
     );
-    if (mirror) await recomputeCustomerBalance(mirror.customer._id);
+    if (mirror) await recomputeContactBalance(mirror.contact._id);
     return mirror;
   } catch (error) {
     logger.error(`Mirror update failed for ${origin?._id}: ${error.message}`);
@@ -130,7 +130,7 @@ export const mirrorTransactionDelete = async (origin) => {
       { new: true }
     );
     if (mirror) {
-      await recomputeCustomerBalance(mirror.customer._id, {
+      await recomputeContactBalance(mirror.contact._id, {
         transactionCountDelta: -1,
       });
     }
@@ -145,15 +145,15 @@ export const resyncLink = async (link) => {
   const since = mongoose.Types.ObjectId.createFromTime(
     Math.floor(new Date(link.accepted_at).getTime() / 1000)
   );
-  const sides = [link.requester_customer_id, link.target_customer_id];
+  const sides = [link.requester_contact_id, link.target_contact_id];
   let created = 0;
 
-  for (const customerId of sides) {
-    const customer = await Customer.findById(customerId);
-    if (!customer) continue;
+  for (const contactId of sides) {
+    const contact = await Contact.findById(contactId);
+    if (!contact) continue;
 
     const missing = await Transaction.find({
-      "customer._id": customer._id,
+      "contact._id": contact._id,
       status: STATUS.ACTIVE,
       mirror_of: null,
       mirrored_transaction_id: null,
@@ -161,7 +161,7 @@ export const resyncLink = async (link) => {
     }).limit(1000);
 
     for (const transaction of missing) {
-      if (await mirrorTransactionCreate(transaction, customer)) created += 1;
+      if (await mirrorTransactionCreate(transaction, contact)) created += 1;
     }
   }
   return created;

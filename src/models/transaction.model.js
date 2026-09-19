@@ -8,10 +8,10 @@ const TransactionSchema = new mongoose.Schema(
       ref: "Business",
       required: true,
     },
-    customer: {
+    contact: {
       _id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Customer",
+        ref: "Contact",
         required: true,
       },
       name: {
@@ -58,7 +58,7 @@ const TransactionSchema = new mongoose.Schema(
   }
 );
 
-TransactionSchema.index({ "customer._id": 1, status: 1, created_at: 1 });
+TransactionSchema.index({ "contact._id": 1, status: 1, created_at: 1 });
 TransactionSchema.index({ business_id: 1, status: 1, created_at: -1 });
 TransactionSchema.index(
   { mirror_of: 1 },

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
 import { userHasAnyPermission } from "../middlewares/check-permission.js";
 import { uploadToS3, getSignedUrlFor } from "../utils/s3.js";
-import Customer from "../models/customer.model.js";
+import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 
 const EXTENSION_BY_MIMETYPE = {
@@ -39,9 +39,9 @@ const authorizeUpload = async (req, category, entityId) => {
       return (await requirePermission(req, "user.update")) ? { ok: true } : FORBIDDEN;
     }
 
-    case "customer": {
-      if (!(await requirePermission(req, "customer.update"))) return FORBIDDEN;
-      return requireOwnedEntity(Customer, { _id: entityId, business_id, status: { $ne: STATUS.DELETED } });
+    case "contact": {
+      if (!(await requirePermission(req, "contact.update"))) return FORBIDDEN;
+      return requireOwnedEntity(Contact, { _id: entityId, business_id, status: { $ne: STATUS.DELETED } });
     }
 
     case "attachment": {
@@ -64,7 +64,7 @@ export const uploadFile = async (req, res) => {
     }
 
     const { category, entity_id: entityId } = req.body;
-    const allowedCategories = ["logo", "avatar", "customer", "attachment"];
+    const allowedCategories = ["logo", "avatar", "contact", "attachment"];
     if (!allowedCategories.includes(category)) {
       return res.status(STATUS_CODES.BAD_REQUEST).json({
         success: false,
@@ -86,7 +86,7 @@ export const uploadFile = async (req, res) => {
     const folderByCategory = {
       logo: "logo",
       avatar: "avatars",
-      customer: "customers",
+      contact: "contacts",
       attachment: "attachments",
     };
     const businessSegment = business_id || "no-business";

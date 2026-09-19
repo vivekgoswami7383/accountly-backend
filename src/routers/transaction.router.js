@@ -1,7 +1,7 @@
 import express from "express";
 import {
   create,
-  customerTransactions,
+  contactTransactions,
   transactions,
   update,
   remove,
@@ -45,10 +45,10 @@ router.get(
 );
 
 router.get(
-  "/customer/:customer_id",
+  "/contact/:contact_id",
   authenticate,
-  checkPermissions(["transactions.get_customer"]),
-  customerTransactions
+  checkPermissions(["transactions.get_contact"]),
+  contactTransactions
 );
 
 router.put(

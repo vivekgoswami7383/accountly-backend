@@ -32,6 +32,15 @@ export const EXPENSE_CATEGORIES = {
   OTHER: "other",
 };
 
+export const CONTACT_LABELS = ["customer", "supplier", "friend", "family"];
+
+export const INVERSE_CONTACT_LABEL = {
+  customer: "supplier",
+  supplier: "customer",
+  friend: "friend",
+  family: "family",
+};
+
 export const MAX_AMOUNT = 999999999999;
 export const MAX_NAME_LENGTH = 60;
 
@@ -59,8 +68,8 @@ export const MESSAGES = {
     USER_NOT_FOUND: "User not found",
     INVALID_PASSWORD: "Invalid password",
     BUSINESS_NOT_FOUND: "Business not found",
-    CUSTOMER_ALREADY_EXISTS: "Customer already exists with this phone number",
-    CUSTOMER_NOT_FOUND: "Customer not found",
+    CONTACT_ALREADY_EXISTS: "Contact already exists with this phone number",
+    CONTACT_NOT_FOUND: "Contact not found",
     TRANSACTION_NOT_FOUND: "Transaction not found",
     INVALID_TRANSACTION_TYPE: "Transaction type must be debit or credit",
     INVALID_AMOUNT: "Amount must be greater than zero",
@@ -71,13 +80,14 @@ export const MESSAGES = {
     INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
     INVALID_EXPENSE_DATE: "Expense date is invalid",
     NOTE_NOT_FOUND: "Note not found",
+    INVALID_CONTACT_LABEL: "Label must be customer, supplier, friend or family",
     LINK_NOT_FOUND: "Link request not found",
-    LINK_CUSTOMER_NOT_ON_APP: "This customer is not on Accountly yet",
-    LINK_ALREADY_EXISTS: "A link with this customer already exists or is pending",
-    LINK_UNAVAILABLE: "Unable to send a link request to this customer",
+    LINK_CONTACT_NOT_ON_APP: "This contact is not on Accountly yet",
+    LINK_ALREADY_EXISTS: "A link with this contact already exists or is pending",
+    LINK_UNAVAILABLE: "Unable to send a link request to this contact",
     LINK_BLOCKED_BY_YOU: "You blocked this business. Unblock it from Link requests to link again",
     LINK_INVALID_STATE: "This link request can no longer be changed",
-    LINK_PHONE_LOCKED: "Unlink this customer before changing the phone number",
+    LINK_PHONE_LOCKED: "Unlink this contact before changing the phone number",
     MIRRORED_READ_ONLY: "This entry was added by the linked business and cannot be changed here",
     TOO_MANY_REQUESTS: "Too many requests, please try again later",
   },
