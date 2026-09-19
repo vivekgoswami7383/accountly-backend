@@ -332,9 +332,28 @@ export const transaction = async (req, res) => {
     });
   }
 
+  const contactDoc = await Contact.findOne({
+    _id: transaction.contact._id,
+    business_id,
+    status: STATUS.ACTIVE,
+  });
+
+  let due_date = null;
+  if (contactDoc?.due_date && contactDoc.balance !== 0) {
+    const dueType = contactDoc.balance < 0 ? "debit" : "credit";
+    const newest = await Transaction.findOne({
+      "contact._id": contactDoc._id,
+      status: STATUS.ACTIVE,
+      transaction_type: dueType,
+    }).sort({ created_at: -1 });
+    if (newest && String(newest._id) === String(transaction._id)) {
+      due_date = contactDoc.due_date;
+    }
+  }
+
   return res.status(STATUS_CODES.SUCCESS).json({
     success: true,
-    transaction: await withAttachmentUrl(transaction),
+    transaction: { ...(await withAttachmentUrl(transaction)), due_date },
   });
 };
 
