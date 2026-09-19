@@ -10,6 +10,8 @@ import {
   unblock,
   unlink,
   resync,
+  importStatus,
+  retryImport,
 } from "../controllers/link.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
@@ -29,6 +31,8 @@ router.post("/:id/accept", ...canManage, accept);
 router.post("/:id/decline", ...canManage, decline);
 router.post("/:id/block", ...canManage, block);
 router.post("/:id/unblock", ...canManage, unblock);
+router.get("/:id/import-status", ...canManage, importStatus);
+router.post("/:id/import-history", ...canManage, retryImport);
 router.post("/:id/unlink", ...canManage, unlink);
 router.post("/:id/resync", ...canManage, resync);
 

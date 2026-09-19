@@ -8,6 +8,7 @@ import { logger } from "./src/config/logger.config.js";
 import { databaseConnection } from "./src/config/database.config.js";
 import mongoose from "mongoose";
 import { runMigrations } from "./src/migrations/index.js";
+import { resumeStalledImports } from "./src/services/ledger-link.service.js";
 import { STATUS_CODES } from "./src/helpers/constants.js";
 
 import "./src/config/load.models.js";
@@ -34,6 +35,7 @@ databaseConnection()
   .then(() =>
     runMigrations(mongoose.connection.db, (message) => logger.info(message))
   )
+  .then(() => resumeStalledImports())
   .then(() => {
     app.listen(env.PORT, "0.0.0.0", () => {
       logger.info(`Server is running on port ${env.PORT}`);

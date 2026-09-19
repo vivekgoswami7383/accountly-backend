@@ -30,6 +30,15 @@ const LinkSchema = new mongoose.Schema(
       default: LINK_STATUS.PENDING,
     },
     accepted_at: { type: Date, default: null },
+    share_history: { type: Boolean, default: false },
+    import_status: {
+      type: String,
+      enum: ["none", "running", "done", "failed"],
+      default: "none",
+    },
+    import_total: { type: Number, default: 0 },
+    import_done: { type: Number, default: 0 },
+    imported_at: { type: Date, default: null },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
