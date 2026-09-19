@@ -90,7 +90,10 @@ export const create = async (req, res) => {
       transactionCountDelta: 1,
     });
 
-    if (due_date && transaction_type === "debit" && contact_balance < 0) {
+    const balanceMatchesType =
+      (transaction_type === "debit" && contact_balance < 0) ||
+      (transaction_type === "credit" && contact_balance > 0);
+    if (due_date && balanceMatchesType) {
       await Contact.findByIdAndUpdate(contactDoc._id, { due_date });
     }
 

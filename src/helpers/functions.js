@@ -150,7 +150,7 @@ export const getDueSummary = async (businessId, today) => {
       $match: {
         business_id: new mongoose.Types.ObjectId(String(businessId)),
         status: STATUS.ACTIVE,
-        balance: { $lt: 0 },
+        balance: { $ne: 0 },
         due_date: { $ne: null },
       },
     },
@@ -164,7 +164,7 @@ export const getDueSummary = async (businessId, today) => {
           ],
         },
         count: { $sum: 1 },
-        amount: { $sum: { $multiply: ["$balance", -1] } },
+        amount: { $sum: { $abs: "$balance" } },
       },
     },
   ]);
@@ -233,7 +233,7 @@ export const recomputeContactBalance = async (
 
   await Contact.findByIdAndUpdate(contactId, {
     balance: newBalance,
-    ...(newBalance >= 0 ? { due_date: null } : {}),
+    ...(newBalance === 0 ? { due_date: null } : {}),
   });
 
   if (contact?.business_id) {

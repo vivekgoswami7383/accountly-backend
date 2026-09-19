@@ -88,7 +88,7 @@ export const MESSAGES = {
     INVALID_CONTACT_TYPE:
       "Contact type must be customer, supplier, business, friend or family",
     INVALID_DUE_DATE: "Due date must be a valid date (YYYY-MM-DD)",
-    DUE_DATE_NOT_ALLOWED: "A due date can only be set while this contact owes you money",
+    DUE_DATE_NOT_ALLOWED: "A due date can only be set while there is a pending balance",
   },
 };
 

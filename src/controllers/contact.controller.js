@@ -130,9 +130,9 @@ export const dueContacts = async (req, res) => {
       Contact.find({
         business_id,
         status: STATUS.ACTIVE,
-        balance: { $lt: 0 },
+        balance: { $ne: 0 },
         due_date: { $ne: null },
-      }).sort({ due_date: 1, balance: 1 }),
+      }).sort({ due_date: 1 }),
       getDueSummary(business_id, today),
     ]);
 
@@ -240,7 +240,7 @@ export const update = async (req, res) => {
           message: MESSAGES.ERROR_MESSAGES.INVALID_DUE_DATE,
         });
       }
-      if (!(contact.balance < 0)) {
+      if (contact.balance === 0) {
         return res.status(STATUS_CODES.BAD_REQUEST).json({
           success: false,
           message: MESSAGES.ERROR_MESSAGES.DUE_DATE_NOT_ALLOWED,
