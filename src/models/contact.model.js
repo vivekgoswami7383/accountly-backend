@@ -28,6 +28,7 @@ const ContactSchema = new mongoose.Schema(
       default: "",
     },
     image_key: { type: String, default: null },
+    due_date: { type: String, default: null },
     type: {
       type: String,
       enum: [...CONTACT_TYPES, null],
@@ -46,6 +47,7 @@ const ContactSchema = new mongoose.Schema(
 );
 
 ContactSchema.index({ business_id: 1, phone: 1 }, { unique: true });
+ContactSchema.index({ business_id: 1, status: 1, due_date: 1 });
 
 const Contact = mongoose.model("Contact", ContactSchema);
 

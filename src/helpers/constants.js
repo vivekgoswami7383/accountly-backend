@@ -11,6 +11,14 @@ export const STATUS = {
   INACTIVE: 2,
 };
 
+export const DUE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export const isValidDueDate = (value) => {
+  if (typeof value !== "string" || !DUE_DATE_PATTERN.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
 export const TRANSACTION_TYPES = {
   DEBIT: "debit",
   CREDIT: "credit",
@@ -79,6 +87,8 @@ export const MESSAGES = {
     NOTE_NOT_FOUND: "Note not found",
     INVALID_CONTACT_TYPE:
       "Contact type must be customer, supplier, business, friend or family",
+    INVALID_DUE_DATE: "Due date must be a valid date (YYYY-MM-DD)",
+    DUE_DATE_NOT_ALLOWED: "A due date can only be set while this contact owes you money",
   },
 };
 

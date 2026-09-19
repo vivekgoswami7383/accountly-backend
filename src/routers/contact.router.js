@@ -5,6 +5,7 @@ import {
   update,
   remove,
   contact,
+  dueContacts,
 } from "../controllers/contact.controller.js";
 import { checkPermissions } from "../middlewares/check-permission.js";
 import { validate } from "../middlewares/validate.js";
@@ -22,6 +23,8 @@ router.post(
 );
 
 router.get("/", authenticate, checkPermissions(["contacts.get"]), contacts);
+
+router.get("/due", authenticate, checkPermissions(["contacts.get"]), dueContacts);
 
 router.get("/:id", authenticate, checkPermissions(["contacts.get"]), contact);
 

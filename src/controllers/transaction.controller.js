@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
-import { MAX_AMOUNT, MESSAGES, STATUS, STATUS_CODES } from "../helpers/constants.js";
+import {
+  MAX_AMOUNT,
+  MESSAGES,
+  STATUS,
+  STATUS_CODES,
+  isValidDueDate,
+} from "../helpers/constants.js";
 import {
   getSearchFilterQuery,
   normalizeTransactionType,
@@ -17,8 +23,14 @@ const withAttachmentUrl = async (transaction) => {
 export const create = async (req, res) => {
   try {
     const { business_id } = req.user;
-    const { contact, amount, description, payment_mode, transaction_date } =
-      req.body;
+    const {
+      contact,
+      amount,
+      description,
+      payment_mode,
+      transaction_date,
+      due_date,
+    } = req.body;
 
     const transaction_type = normalizeTransactionType(
       req.body.transaction_type
@@ -57,6 +69,13 @@ export const create = async (req, res) => {
       });
     }
 
+    if (due_date && !isValidDueDate(due_date)) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({
+        success: false,
+        message: MESSAGES.ERROR_MESSAGES.INVALID_DUE_DATE,
+      });
+    }
+
     const transaction = await Transaction.create({
       business_id,
       contact: { _id: contactDoc._id, name: contactDoc.name },
@@ -70,6 +89,10 @@ export const create = async (req, res) => {
     const contact_balance = await recomputeContactBalance(contactDoc._id, {
       transactionCountDelta: 1,
     });
+
+    if (due_date && transaction_type === "debit" && contact_balance < 0) {
+      await Contact.findByIdAndUpdate(contactDoc._id, { due_date });
+    }
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,

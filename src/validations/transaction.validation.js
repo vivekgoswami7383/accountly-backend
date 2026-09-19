@@ -18,4 +18,8 @@ export const createTransactionSchema = Joi.object({
   payment_mode: Joi.string().valid("cash", "upi", "bank", "other").optional(),
   description: Joi.string().optional().allow(""),
   transaction_date: Joi.date().iso().max("now").optional(),
+  due_date: Joi.string()
+    .pattern(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .allow(null, ""),
 }).unknown(true);

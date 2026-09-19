@@ -144,6 +144,42 @@ export const balanceBucket = (balance) => ({
   give: balance > 0 ? balance : 0,
 });
 
+export const getDueSummary = async (businessId, today) => {
+  const rows = await Contact.aggregate([
+    {
+      $match: {
+        business_id: new mongoose.Types.ObjectId(String(businessId)),
+        status: STATUS.ACTIVE,
+        balance: { $lt: 0 },
+        due_date: { $ne: null },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          $cond: [
+            { $lt: ["$due_date", today] },
+            "overdue",
+            { $cond: [{ $eq: ["$due_date", today] }, "today", "upcoming"] },
+          ],
+        },
+        count: { $sum: 1 },
+        amount: { $sum: { $multiply: ["$balance", -1] } },
+      },
+    },
+  ]);
+
+  const summary = {
+    overdue: { count: 0, amount: 0 },
+    today: { count: 0, amount: 0 },
+    upcoming: { count: 0, amount: 0 },
+  };
+  rows.forEach((row) => {
+    summary[row._id] = { count: row.count, amount: row.amount };
+  });
+  return summary;
+};
+
 export const adjustBusinessStats = async (businessId, delta) => {
   await BusinessStats.findOneAndUpdate(
     { business_id: businessId },
@@ -195,7 +231,10 @@ export const recomputeContactBalance = async (
 
   const newBalance = (totals?.credit || 0) - (totals?.debit || 0);
 
-  await Contact.findByIdAndUpdate(contactId, { balance: newBalance });
+  await Contact.findByIdAndUpdate(contactId, {
+    balance: newBalance,
+    ...(newBalance >= 0 ? { due_date: null } : {}),
+  });
 
   if (contact?.business_id) {
     const before = balanceBucket(oldBalance);
