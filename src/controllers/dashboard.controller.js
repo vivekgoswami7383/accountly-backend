@@ -4,8 +4,6 @@ import Business from "../models/business.model.js";
 import BusinessStats from "../models/business-stats.model.js";
 import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
-import { getDueSummary } from "../helpers/functions.js";
-import { isValidDueDate } from "../helpers/constants.js";
 
 const withImageUrl = async (contact) => {
   const obj = contact.toObject ? contact.toObject() : contact;
@@ -41,10 +39,6 @@ export const statistics = async (req, res) => {
         .limit(3),
     ]);
 
-    const due = isValidDueDate(req.query.today)
-      ? await getDueSummary(business._id, req.query.today)
-      : null;
-
     const receivable = stats?.receivable || 0;
     const payable = stats?.payable || 0;
 
@@ -58,7 +52,6 @@ export const statistics = async (req, res) => {
           contact_count: stats?.contact_count || 0,
           total_transactions: stats?.total_transactions || 0,
         },
-        due,
         recent_contacts: await Promise.all(contacts.map(withImageUrl)),
         recent_transactions: transactions,
       },
