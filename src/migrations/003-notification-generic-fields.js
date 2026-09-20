@@ -51,7 +51,6 @@ export const up = async (db, log = () => {}) => {
             title,
             body,
             target: { kind: "contact", id: doc.data?.contact_id || null },
-            actor_id: null,
           },
         },
       },

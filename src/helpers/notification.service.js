@@ -61,7 +61,6 @@ const buildDocuments = (spec, userIds) => {
     body: spec.body || "",
     data: spec.data || {},
     target,
-    actor_id: spec.actorId || null,
     dedupe_key:
       spec.dedupeKey || new mongoose.Types.ObjectId().toString(),
     read_at: null,
@@ -70,19 +69,40 @@ const buildDocuments = (spec, userIds) => {
   }));
 };
 
-const insertOnce = async (docs) => {
+const isDuplicateKeyError = (error) =>
+  error?.code === 11000 ||
+  (Array.isArray(error?.writeErrors) &&
+    error.writeErrors.every((item) => item.code === 11000));
+
+const insertNew = async (docs) => {
   if (docs.length === 0) return 0;
-  const result = await Notification.bulkWrite(
-    docs.map((doc) => ({
-      updateOne: {
-        filter: { user_id: doc.user_id, dedupe_key: doc.dedupe_key },
-        update: { $setOnInsert: doc },
-        upsert: true,
+
+  const existing = await Notification.collection
+    .find(
+      {
+        user_id: { $in: [...new Set(docs.map((doc) => doc.user_id))] },
+        dedupe_key: { $in: docs.map((doc) => doc.dedupe_key) },
       },
-    })),
-    { ordered: false }
+      { projection: { user_id: 1, dedupe_key: 1 } }
+    )
+    .toArray();
+  const seen = new Set(
+    existing.map((doc) => `${doc.user_id}:${doc.dedupe_key}`)
   );
-  return result.upsertedCount;
+  const fresh = docs.filter(
+    (doc) => !seen.has(`${doc.user_id}:${doc.dedupe_key}`)
+  );
+  if (fresh.length === 0) return 0;
+
+  try {
+    const result = await Notification.collection.insertMany(fresh, {
+      ordered: false,
+    });
+    return result.insertedCount;
+  } catch (error) {
+    if (isDuplicateKeyError(error)) return error.result?.insertedCount || 0;
+    throw error;
+  }
 };
 
 export const createNotifications = async (specs) => {
@@ -91,7 +111,7 @@ export const createNotifications = async (specs) => {
   const docs = specs.flatMap((spec) =>
     buildDocuments(spec, audienceFor(spec, byBusiness))
   );
-  return insertOnce(docs);
+  return insertNew(docs);
 };
 
 export const notify = async (spec) => {

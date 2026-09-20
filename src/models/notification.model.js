@@ -3,14 +3,14 @@ import { NOTIFICATION_CATEGORIES } from "../helpers/notification-types.js";
 
 const NotificationSchema = new mongoose.Schema(
   {
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     business_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
+      required: true,
+    },
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     type: { type: String, required: true, trim: true },
@@ -24,11 +24,6 @@ const NotificationSchema = new mongoose.Schema(
     target: {
       kind: { type: String, default: "none" },
       id: { type: String, default: null },
-    },
-    actor_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
     },
     dedupe_key: { type: String, required: true },
     read_at: { type: Date, default: null },
