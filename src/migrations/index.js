@@ -1,6 +1,7 @@
 import renameCustomerToContact from "./001-rename-customer-to-contact.js";
+import dropBusinessDueDateIndex from "./002-drop-business-due-date-index.js";
 
-const MIGRATIONS = [renameCustomerToContact];
+const MIGRATIONS = [renameCustomerToContact, dropBusinessDueDateIndex];
 
 export const runMigrations = async (db, log = () => {}) => {
   const applied = db.collection("migrations");

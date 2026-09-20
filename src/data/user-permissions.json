@@ -21,6 +21,8 @@
       "expense.delete",
       "note.create",
       "notes.get",
+      "notifications.get",
+      "notification.update",
       "note.update",
       "note.delete"
     ]
@@ -46,6 +48,8 @@
       "expense.delete",
       "note.create",
       "notes.get",
+      "notifications.get",
+      "notification.update",
       "note.update",
       "note.delete"
     ]
@@ -67,6 +71,8 @@
       "expense.delete",
       "note.create",
       "notes.get",
+      "notifications.get",
+      "notification.update",
       "note.update",
       "note.delete"
     ]
@@ -83,6 +89,8 @@
       "expense.delete",
       "note.create",
       "notes.get",
+      "notifications.get",
+      "notification.update",
       "note.update",
       "note.delete"
     ]

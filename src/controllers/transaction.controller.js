@@ -14,6 +14,7 @@ import {
 import { getSignedUrlFor } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
 import Contact from "../models/contact.model.js";
+import { notifyDueForContact } from "../helpers/notifications.js";
 
 const withAttachmentUrl = async (transaction) => {
   const obj = transaction.toObject ? transaction.toObject() : transaction;
@@ -94,7 +95,12 @@ export const create = async (req, res) => {
       (transaction_type === "debit" && contact_balance < 0) ||
       (transaction_type === "credit" && contact_balance > 0);
     if (due_date && balanceMatchesType) {
-      await Contact.findByIdAndUpdate(contactDoc._id, { due_date });
+      const withDue = await Contact.findByIdAndUpdate(
+        contactDoc._id,
+        { due_date },
+        { new: true }
+      );
+      await notifyDueForContact(withDue);
     }
 
     return res.status(STATUS_CODES.SUCCESS).json({

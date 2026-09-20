@@ -7,6 +7,7 @@ import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import BusinessStats from "../models/business-stats.model.js";
 import { STATUS, TRANSACTION_TYPE_ALIASES } from "./constants.js";
+import { notifyDueSettled } from "./notifications.js";
 
 export const hashPassword = async (password) => {
   const hash = await bcrypt.hash(password, 10);
@@ -144,42 +145,6 @@ export const balanceBucket = (balance) => ({
   give: balance > 0 ? balance : 0,
 });
 
-export const getDueSummary = async (businessId, today) => {
-  const rows = await Contact.aggregate([
-    {
-      $match: {
-        business_id: new mongoose.Types.ObjectId(String(businessId)),
-        status: STATUS.ACTIVE,
-        balance: { $ne: 0 },
-        due_date: { $ne: null },
-      },
-    },
-    {
-      $group: {
-        _id: {
-          $cond: [
-            { $lt: ["$due_date", today] },
-            "overdue",
-            { $cond: [{ $eq: ["$due_date", today] }, "today", "upcoming"] },
-          ],
-        },
-        count: { $sum: 1 },
-        amount: { $sum: { $abs: "$balance" } },
-      },
-    },
-  ]);
-
-  const summary = {
-    overdue: { count: 0, amount: 0 },
-    today: { count: 0, amount: 0 },
-    upcoming: { count: 0, amount: 0 },
-  };
-  rows.forEach((row) => {
-    summary[row._id] = { count: row.count, amount: row.amount };
-  });
-  return summary;
-};
-
 export const adjustBusinessStats = async (businessId, delta) => {
   await BusinessStats.findOneAndUpdate(
     { business_id: businessId },
@@ -235,6 +200,10 @@ export const recomputeContactBalance = async (
     balance: newBalance,
     ...(newBalance === 0 ? { due_date: null } : {}),
   });
+
+  if (newBalance === 0 && contact?.due_date) {
+    await notifyDueSettled(contact, oldBalance);
+  }
 
   if (contact?.business_id) {
     const before = balanceBucket(oldBalance);

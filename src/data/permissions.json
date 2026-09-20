@@ -30,5 +30,13 @@
       "transaction.update",
       "transaction.delete"
     ]
+  },
+  {
+    "key": "notification",
+    "name": "Notification",
+    "permissions": [
+      "notifications.get",
+      "notification.update"
+    ]
   }
 ]

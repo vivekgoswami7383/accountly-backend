@@ -5,3 +5,4 @@ import "../models/contact.model.js";
 import "../models/transaction.model.js";
 import "../models/expense.model.js";
 import "../models/note.model.js";
+import "../models/notification.model.js";

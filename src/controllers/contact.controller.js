@@ -1,7 +1,8 @@
 import { CONTACT_TYPES, MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES, isValidDueDate } from "../helpers/constants.js";
 import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
-import { adjustBusinessStats, balanceBucket, getDueSummary } from "../helpers/functions.js";
+import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
+import { notifyDueForContact } from "../helpers/notifications.js";
 import { getSignedUrlFor } from "../utils/s3.js";
 
 const withImageUrl = async (contact) => {
@@ -114,53 +115,6 @@ export const contacts = async (req, res) => {
   }
 };
 
-export const dueContacts = async (req, res) => {
-  const { business_id } = req.user;
-
-  try {
-    if (!isValidDueDate(req.query.today)) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({
-        success: false,
-        message: MESSAGES.RESPONSE_MESSAGES.INVALID_REQUEST,
-      });
-    }
-    const today = req.query.today;
-
-    const [dueList, summary] = await Promise.all([
-      Contact.find({
-        business_id,
-        status: STATUS.ACTIVE,
-        balance: { $ne: 0 },
-        due_date: { $ne: null },
-      }).sort({ due_date: 1 }),
-      getDueSummary(business_id, today),
-    ]);
-
-    const items = await Promise.all(dueList.map(withImageUrl));
-    const bucket = (contact) =>
-      contact.due_date < today
-        ? "overdue"
-        : contact.due_date === today
-          ? "today"
-          : "upcoming";
-
-    return res.status(STATUS_CODES.SUCCESS).json({
-      success: true,
-      data: {
-        summary,
-        overdue: items.filter((c) => bucket(c) === "overdue"),
-        today: items.filter((c) => bucket(c) === "today"),
-        upcoming: items.filter((c) => bucket(c) === "upcoming"),
-      },
-    });
-  } catch (error) {
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
 export const contact = async (req, res) => {
   const { business_id } = req.user;
 
@@ -259,6 +213,8 @@ export const update = async (req, res) => {
     const updatedContact = await Contact.findByIdAndUpdate(id, patch, {
       new: true,
     });
+
+    if (dueProvided && nextDue) await notifyDueForContact(updatedContact);
 
     return res.status(STATUS_CODES.SUCCESS).json({
       success: true,
