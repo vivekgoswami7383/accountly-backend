@@ -1,7 +1,8 @@
 import { logger } from "../config/logger.config.js";
 import { NOTIFICATION_TIMEZONE, STATUS } from "./constants.js";
-import { NOTIFICATION_TARGETS, NOTIFICATION_TYPES } from "./notification-types.js";
+import { NOTIFICATION_TYPES } from "./notification-types.js";
 import { createNotifications, notify } from "./notification.service.js";
+import Business from "../models/business.model.js";
 import Contact from "../models/contact.model.js";
 
 const DAY_MS = 86400000;
@@ -30,31 +31,46 @@ export const dueTypeFor = (dueDate, today) => {
   return null;
 };
 
-const dueSpec = (contact, type) => {
-  const amount = Math.abs(contact.balance);
-  const receivable = contact.balance < 0;
-  const who = receivable
-    ? `${contact.name} owes you ${amount}`
-    : `You owe ${contact.name} ${amount}`;
-  const when = {
+const formatMoney = (amount, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
+const shortDate = (dateStr) =>
+  new Date(`${dateStr}T12:00:00Z`).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
+
+const currenciesFor = async (businessIds) => {
+  const businesses = await Business.find({ _id: { $in: businessIds } })
+    .select("currency")
+    .lean();
+  return new Map(businesses.map((b) => [String(b._id), b.currency || "INR"]));
+};
+
+const leadFor = (contact, money) =>
+  contact.balance < 0
+    ? `${contact.name} owes you ${money}`
+    : `You owe ${contact.name} ${money}`;
+
+const dueSpec = (contact, type, currency) => {
+  const money = formatMoney(Math.abs(contact.balance), currency);
+  const tail = {
     [NOTIFICATION_TYPES.DUE_TOMORROW]: "Due tomorrow",
     [NOTIFICATION_TYPES.DUE_TODAY]: "Due today",
-    [NOTIFICATION_TYPES.OVERDUE]: `Overdue since ${contact.due_date}`,
+    [NOTIFICATION_TYPES.OVERDUE]: `Overdue since ${shortDate(contact.due_date)}`,
   }[type];
 
   return {
     businessId: contact.business_id,
     type,
-    title: who,
-    body: when,
-    data: {
-      contact_id: String(contact._id),
-      contact_name: contact.name,
-      amount,
-      direction: receivable ? "receivable" : "payable",
-      due_date: contact.due_date,
-    },
-    target: { kind: NOTIFICATION_TARGETS.CONTACT, id: String(contact._id) },
+    message: `${leadFor(contact, money)}. ${tail}.`,
+    link: `/contact/${contact._id}`,
     dedupeKey: `${contact._id}:${contact.due_date}:${type}`,
   };
 };
@@ -63,17 +79,23 @@ export const notifyDueForContact = async (contact, now = new Date()) => {
   if (!contact?.due_date || contact.balance === 0) return;
   const type = dueTypeFor(contact.due_date, todayInTimezone(now));
   if (!type) return;
-  await notify(dueSpec(contact, type));
+  const currencies = await currenciesFor([contact.business_id]);
+  await notify(dueSpec(contact, type, currencies.get(String(contact.business_id))));
 };
 
 export const notifyDueSettled = async (contact, previousBalance) => {
   if (!contact?.due_date) return;
-  const settled = { ...contact.toObject(), balance: previousBalance };
-  const amount = Math.abs(previousBalance);
+  const currencies = await currenciesFor([contact.business_id]);
+  const money = formatMoney(
+    Math.abs(previousBalance),
+    currencies.get(String(contact.business_id))
+  );
   await notify({
-    ...dueSpec(settled, NOTIFICATION_TYPES.DUE_SETTLED),
-    title: `Settled with ${contact.name}`,
-    body: `${amount} cleared`,
+    businessId: contact.business_id,
+    type: NOTIFICATION_TYPES.DUE_SETTLED,
+    message: `Settled with ${contact.name}. ${money} cleared.`,
+    link: `/contact/${contact._id}`,
+    dedupeKey: `${contact._id}:${contact.due_date}:${NOTIFICATION_TYPES.DUE_SETTLED}`,
   });
 };
 
@@ -93,10 +115,15 @@ export const runDueNotificationJob = async (now = new Date()) => {
 
   const flush = async () => {
     if (batch.length === 0) return;
+    const currencies = await currenciesFor([
+      ...new Set(batch.map((contact) => String(contact.business_id))),
+    ]);
     const specs = batch
       .map((contact) => ({ contact, type: dueTypeFor(contact.due_date, today) }))
       .filter(({ type }) => type)
-      .map(({ contact, type }) => dueSpec(contact, type));
+      .map(({ contact, type }) =>
+        dueSpec(contact, type, currencies.get(String(contact.business_id)))
+      );
     created += await createNotifications(specs);
     batch = [];
   };

@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { NOTIFICATION_CATEGORIES } from "../helpers/notification-types.js";
 
 const NotificationSchema = new mongoose.Schema(
   {
@@ -14,17 +13,8 @@ const NotificationSchema = new mongoose.Schema(
       required: true,
     },
     type: { type: String, required: true, trim: true },
-    category: {
-      type: String,
-      default: NOTIFICATION_CATEGORIES.SYSTEM,
-    },
-    title: { type: String, default: "" },
-    body: { type: String, default: "" },
-    data: { type: mongoose.Schema.Types.Mixed, default: {} },
-    target: {
-      kind: { type: String, default: "none" },
-      id: { type: String, default: null },
-    },
+    message: { type: String, required: true },
+    link: { type: String, default: null },
     dedupe_key: { type: String, required: true },
     read_at: { type: Date, default: null },
     expires_at: { type: Date, required: true },
@@ -36,7 +26,6 @@ const NotificationSchema = new mongoose.Schema(
 );
 
 NotificationSchema.index({ user_id: 1, created_at: -1 });
-NotificationSchema.index({ user_id: 1, category: 1, created_at: -1 });
 NotificationSchema.index({ user_id: 1, read_at: 1 });
 NotificationSchema.index({ user_id: 1, dedupe_key: 1 }, { unique: true });
 NotificationSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });

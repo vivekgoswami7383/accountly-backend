@@ -1,12 +1,7 @@
 import mongoose from "mongoose";
 import { logger } from "../config/logger.config.js";
 import { STATUS } from "./constants.js";
-import {
-  DEFAULT_NOTIFICATION_TTL_DAYS,
-  NOTIFICATION_CATEGORIES,
-  NOTIFICATION_TARGETS,
-  NOTIFICATION_TYPE_CONFIG,
-} from "./notification-types.js";
+import { DEFAULT_NOTIFICATION_TTL_DAYS } from "./notification-types.js";
 import Notification from "../models/notification.model.js";
 import User from "../models/user.model.js";
 
@@ -49,21 +44,15 @@ const audienceFor = (spec, byBusiness) => {
 
 const buildDocuments = (spec, userIds) => {
   const now = new Date();
-  const config = NOTIFICATION_TYPE_CONFIG[spec.type] || {};
-  const ttlDays = spec.ttlDays || config.ttlDays || DEFAULT_NOTIFICATION_TTL_DAYS;
-  const target = spec.target || { kind: NOTIFICATION_TARGETS.NONE, id: null };
+  const ttlDays = spec.ttlDays || DEFAULT_NOTIFICATION_TTL_DAYS;
 
   return userIds.map((userId) => ({
-    user_id: userId,
     business_id: spec.businessId,
+    user_id: userId,
     type: spec.type,
-    category: spec.category || config.category || NOTIFICATION_CATEGORIES.SYSTEM,
-    title: spec.title || "",
-    body: spec.body || "",
-    data: spec.data || {},
-    target,
-    dedupe_key:
-      spec.dedupeKey || new mongoose.Types.ObjectId().toString(),
+    message: spec.message,
+    link: spec.link || null,
+    dedupe_key: spec.dedupeKey || new mongoose.Types.ObjectId().toString(),
     read_at: null,
     expires_at: new Date(now.getTime() + ttlDays * DAY_MS),
     created_at: now,
