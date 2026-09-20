@@ -30,7 +30,7 @@ const NotificationSchema = new mongoose.Schema(
     expires_at: { type: Date, required: true },
   },
   {
-    timestamps: { createdAt: "created_at", updatedAt: false },
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     versionKey: false,
   }
 );

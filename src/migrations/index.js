@@ -2,12 +2,14 @@ import renameCustomerToContact from "./001-rename-customer-to-contact.js";
 import dropBusinessDueDateIndex from "./002-drop-business-due-date-index.js";
 import notificationGenericFields from "./003-notification-generic-fields.js";
 import normalizeNotificationOrder from "./004-normalize-notification-order.js";
+import backfillNotificationUpdatedAt from "./005-backfill-notification-updated-at.js";
 
 const MIGRATIONS = [
   renameCustomerToContact,
   dropBusinessDueDateIndex,
   notificationGenericFields,
   normalizeNotificationOrder,
+  backfillNotificationUpdatedAt,
 ];
 
 export const runMigrations = async (db, log = () => {}) => {

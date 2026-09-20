@@ -48,6 +48,7 @@ const audienceFor = (spec, byBusiness) => {
 };
 
 const buildDocuments = (spec, userIds) => {
+  const now = new Date();
   const config = NOTIFICATION_TYPE_CONFIG[spec.type] || {};
   const ttlDays = spec.ttlDays || config.ttlDays || DEFAULT_NOTIFICATION_TTL_DAYS;
   const target = spec.target || { kind: NOTIFICATION_TARGETS.NONE, id: null };
@@ -64,8 +65,9 @@ const buildDocuments = (spec, userIds) => {
     dedupe_key:
       spec.dedupeKey || new mongoose.Types.ObjectId().toString(),
     read_at: null,
-    expires_at: new Date(Date.now() + ttlDays * DAY_MS),
-    created_at: new Date(),
+    expires_at: new Date(now.getTime() + ttlDays * DAY_MS),
+    created_at: now,
+    updated_at: now,
   }));
 };
 
