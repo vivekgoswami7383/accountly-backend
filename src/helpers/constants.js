@@ -11,16 +11,7 @@ export const STATUS = {
   INACTIVE: 2,
 };
 
-export const NOTIFICATION_TYPES = {
-  DUE_TOMORROW: "due_tomorrow",
-  DUE_TODAY: "due_today",
-  OVERDUE: "overdue",
-  DUE_SETTLED: "due_settled",
-};
-
-export const NOTIFICATION_TTL_DAYS = 30;
 export const NOTIFICATION_TIMEZONE = "Asia/Kolkata";
-export const OVERDUE_LOOKBACK_DAYS = 7;
 
 export const DUE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 

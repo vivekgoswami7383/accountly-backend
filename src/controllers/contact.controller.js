@@ -2,7 +2,7 @@ import { CONTACT_TYPES, MAX_NAME_LENGTH, MESSAGES, STATUS, STATUS_CODES, isValid
 import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import { adjustBusinessStats, balanceBucket } from "../helpers/functions.js";
-import { notifyDueForContact } from "../helpers/notifications.js";
+import { notifyDueForContact } from "../helpers/due-notifications.js";
 import { getSignedUrlFor } from "../utils/s3.js";
 
 const withImageUrl = async (contact) => {

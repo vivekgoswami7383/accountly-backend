@@ -7,7 +7,7 @@ import Contact from "../models/contact.model.js";
 import Transaction from "../models/transaction.model.js";
 import BusinessStats from "../models/business-stats.model.js";
 import { STATUS, TRANSACTION_TYPE_ALIASES } from "./constants.js";
-import { notifyDueSettled } from "./notifications.js";
+import { notifyDueSettled } from "./due-notifications.js";
 
 export const hashPassword = async (password) => {
   const hash = await bcrypt.hash(password, 10);

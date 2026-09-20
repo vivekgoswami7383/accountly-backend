@@ -14,7 +14,7 @@ import {
 import { getSignedUrlFor } from "../utils/s3.js";
 import Transaction from "../models/transaction.model.js";
 import Contact from "../models/contact.model.js";
-import { notifyDueForContact } from "../helpers/notifications.js";
+import { notifyDueForContact } from "../helpers/due-notifications.js";
 
 const withAttachmentUrl = async (transaction) => {
   const obj = transaction.toObject ? transaction.toObject() : transaction;

@@ -13,8 +13,13 @@ export const notifications = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.max(1, Math.min(50, parseInt(req.query.limit) || 20));
 
+    const filter = { user_id: userId };
+    if (typeof req.query.category === "string" && req.query.category) {
+      filter.category = req.query.category;
+    }
+
     const [items, unread_count] = await Promise.all([
-      Notification.find({ user_id: userId })
+      Notification.find(filter)
         .sort({ created_at: -1, _id: -1 })
         .skip((page - 1) * limit)
         .limit(limit + 1)
