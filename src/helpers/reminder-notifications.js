@@ -2,6 +2,7 @@ import { logger } from "../config/logger.config.js";
 import { REMINDER_REPEATS, REMINDER_STATES, STATUS } from "./constants.js";
 import { NOTIFICATION_TYPES } from "./notification-types.js";
 import { notify } from "./notification.service.js";
+import { sendPushToUser } from "./push.service.js";
 import { formatReminderTime, nextOccurrence } from "./reminder-schedule.js";
 import Reminder from "../models/reminder.model.js";
 
@@ -40,14 +41,25 @@ const claim = async (reminder, now) => {
 const fire = async (reminder, now) => {
   if (!(await claim(reminder, now))) return false;
 
-  await notify({
+  const message = messageFor(reminder, now);
+  const link = `/reminder/${reminder._id}`;
+  const created = await notify({
     businessId: reminder.business_id,
     userIds: [reminder.user_id],
     type: NOTIFICATION_TYPES.REMINDER,
-    message: messageFor(reminder, now),
-    link: `/reminder/${reminder._id}`,
+    message,
+    link,
     dedupeKey: `reminder:${reminder._id}:${reminder.remind_at.toISOString()}`,
   });
+
+  if (created > 0) {
+    await sendPushToUser(reminder.user_id, {
+      title: message,
+      body: (reminder.notes || "").slice(0, 200),
+      url: link,
+      tag: `reminder:${reminder._id}`,
+    });
+  }
   return true;
 };
 
