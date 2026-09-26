@@ -24,7 +24,11 @@
       "notifications.get",
       "notification.update",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "reminder.create",
+      "reminders.get",
+      "reminder.update",
+      "reminder.delete"
     ]
   },
   {
@@ -51,7 +55,11 @@
       "notifications.get",
       "notification.update",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "reminder.create",
+      "reminders.get",
+      "reminder.update",
+      "reminder.delete"
     ]
   },
   {
@@ -74,7 +82,11 @@
       "notifications.get",
       "notification.update",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "reminder.create",
+      "reminders.get",
+      "reminder.update",
+      "reminder.delete"
     ]
   },
   {
@@ -92,7 +104,11 @@
       "notifications.get",
       "notification.update",
       "note.update",
-      "note.delete"
+      "note.delete",
+      "reminder.create",
+      "reminders.get",
+      "reminder.update",
+      "reminder.delete"
     ]
   }
 ]

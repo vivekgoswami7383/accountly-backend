@@ -50,6 +50,23 @@ export const CONTACT_TYPES = [
   "family",
 ];
 
+export const REMINDER_REPEATS = {
+  NONE: "none",
+  DAILY: "daily",
+  WEEKLY: "weekly",
+  MONTHLY: "monthly",
+};
+
+export const REMINDER_STATES = {
+  SCHEDULED: "scheduled",
+  FIRED: "fired",
+  DONE: "done",
+};
+
+export const REMINDER_SNOOZE_MINUTES = [10, 60, 1440];
+export const MAX_REMINDER_TITLE_LENGTH = 200;
+export const MAX_REMINDER_NOTES_LENGTH = 2000;
+
 export const MAX_AMOUNT = 999999999999;
 export const MAX_NAME_LENGTH = 60;
 
@@ -87,6 +104,9 @@ export const MESSAGES = {
     INVALID_EXPENSE_CATEGORY: "Category must be one of the allowed expense categories",
     INVALID_EXPENSE_DATE: "Expense date is invalid",
     NOTE_NOT_FOUND: "Note not found",
+    REMINDER_NOT_FOUND: "Reminder not found",
+    REMINDER_TIME_IN_PAST: "Reminder time must be in the future",
+    INVALID_TIMEZONE: "Timezone is invalid",
     INVALID_CONTACT_TYPE:
       "Contact type must be customer, supplier, business, friend or family",
     INVALID_DUE_DATE: "Due date must be a valid date (YYYY-MM-DD)",

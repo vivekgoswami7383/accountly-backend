@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import { runMigrations } from "./src/migrations/index.js";
 import { STATUS_CODES } from "./src/helpers/constants.js";
 import { startNotificationScheduler } from "./src/helpers/due-notifications.js";
+import { startReminderScheduler } from "./src/helpers/reminder-notifications.js";
 
 import "./src/config/load.models.js";
 import "./src/utils/passport.js";
@@ -41,6 +42,7 @@ databaseConnection()
       logger.info(`Server accessible at http://0.0.0.0:${env.PORT}`);
       logger.info(`✅ Connected to mongodb`);
       startNotificationScheduler();
+      startReminderScheduler();
     });
   })
   .catch((error) => {

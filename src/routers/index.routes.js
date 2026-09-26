@@ -9,6 +9,7 @@ import expenseRoutes from "./expense.router.js";
 import noteRoutes from "./note.router.js";
 import uploadRoutes from "./upload.router.js";
 import notificationRoutes from "./notification.router.js";
+import reminderRoutes from "./reminder.router.js";
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use("/expense", expenseRoutes);
 router.use("/note", noteRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/notification", notificationRoutes);
+router.use("/reminder", reminderRoutes);
 
 export default router;

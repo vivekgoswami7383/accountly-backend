@@ -38,5 +38,15 @@
       "notifications.get",
       "notification.update"
     ]
+  },
+  {
+    "key": "reminder",
+    "name": "Reminder",
+    "permissions": [
+      "reminder.create",
+      "reminders.get",
+      "reminder.update",
+      "reminder.delete"
+    ]
   }
 ]
