@@ -24,5 +24,14 @@ export const nextOccurrence = (startsAt, timezone, repeat, after) => {
   return at(n).toJSDate();
 };
 
+export const earlyAtFor = (remindAt, earlyMinutes, now = new Date()) => {
+  if (!earlyMinutes) return null;
+  const earlyAt = new Date(remindAt.getTime() - earlyMinutes * 60 * 1000);
+  return earlyAt > now ? earlyAt : null;
+};
+
+export const formatReminderClock = (date, timezone) =>
+  DateTime.fromJSDate(date, { zone: timezone }).toFormat("h:mm a");
+
 export const formatReminderTime = (date, timezone) =>
   DateTime.fromJSDate(date, { zone: timezone }).toFormat("d LLL, h:mm a");

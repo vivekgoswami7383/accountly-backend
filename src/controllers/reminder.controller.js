@@ -5,11 +5,12 @@ import {
   STATUS,
   STATUS_CODES,
 } from "../helpers/constants.js";
-import { isValidTimezone } from "../helpers/reminder-schedule.js";
+import { earlyAtFor, isValidTimezone } from "../helpers/reminder-schedule.js";
 import Reminder from "../models/reminder.model.js";
 
 const PAST_GRACE_MS = 60 * 1000;
 const EDITABLE_FIELDS = ["title", "notes", "timezone", "repeat"];
+const EARLY_FIELD = "early_minutes";
 
 const respondError = (res, error) =>
   res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -43,7 +44,7 @@ const respondReminder = (res, reminder) =>
 export const create = async (req, res) => {
   try {
     const { _id: user_id, business_id } = req.user;
-    const { title, notes, timezone, repeat } = req.body;
+    const { title, notes, timezone, repeat, early_minutes = null } = req.body;
     const remindAt = new Date(req.body.remind_at);
 
     if (!isValidTimezone(timezone)) {
@@ -62,6 +63,8 @@ export const create = async (req, res) => {
       repeat,
       starts_at: remindAt,
       remind_at: remindAt,
+      early_minutes,
+      early_at: earlyAtFor(remindAt, early_minutes),
     });
 
     return respondReminder(res, reminder);
@@ -142,6 +145,12 @@ export const update = async (req, res) => {
       }
     }
 
+    if (req.body[EARLY_FIELD] !== undefined) doc[EARLY_FIELD] = req.body[EARLY_FIELD];
+    doc.early_at =
+      doc.state === REMINDER_STATES.SCHEDULED
+        ? earlyAtFor(doc.remind_at, doc.early_minutes)
+        : null;
+
     await doc.save();
     return respondReminder(res, doc);
   } catch (error) {
@@ -169,6 +178,7 @@ export const done = async (req, res) => {
 
     doc.state = REMINDER_STATES.DONE;
     doc.completed_at = new Date();
+    doc.early_at = null;
     await doc.save();
     return respondReminder(res, doc);
   } catch (error) {
@@ -182,6 +192,7 @@ export const snooze = async (req, res) => {
     if (!doc) return notFound(res);
 
     doc.remind_at = new Date(Date.now() + req.body.minutes * 60 * 1000);
+    doc.early_at = null;
     doc.state = REMINDER_STATES.SCHEDULED;
     doc.completed_at = null;
     await doc.save();

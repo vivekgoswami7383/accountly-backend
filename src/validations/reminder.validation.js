@@ -3,6 +3,7 @@ import {
   MAX_REMINDER_NOTES_LENGTH,
   MAX_REMINDER_TITLE_LENGTH,
   REMINDER_REPEATS,
+  REMINDER_EARLY_MINUTES,
   REMINDER_SNOOZE_MINUTES,
 } from "../helpers/constants.js";
 
@@ -18,6 +19,10 @@ const fields = {
   remind_at: Joi.date().iso(),
   timezone: Joi.string().trim().max(64),
   repeat: Joi.string().valid(...Object.values(REMINDER_REPEATS)),
+  early_minutes: Joi.number()
+    .valid(...REMINDER_EARLY_MINUTES)
+    .allow(null),
+  early_at: Joi.forbidden(),
 };
 
 export const createReminderSchema = Joi.object({

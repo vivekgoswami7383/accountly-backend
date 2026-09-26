@@ -64,6 +64,7 @@ export const REMINDER_STATES = {
 };
 
 export const REMINDER_SNOOZE_MINUTES = [10, 60, 1440];
+export const REMINDER_EARLY_MINUTES = [5, 15, 30, 60, 1440];
 export const MAX_REMINDER_TITLE_LENGTH = 200;
 export const MAX_REMINDER_NOTES_LENGTH = 2000;
 

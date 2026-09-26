@@ -27,6 +27,8 @@ const ReminderSchema = new mongoose.Schema(
       enum: Object.values(REMINDER_REPEATS),
       default: REMINDER_REPEATS.NONE,
     },
+    early_minutes: { type: Number, default: null },
+    early_at: { type: Date, default: null },
     state: {
       type: String,
       enum: Object.values(REMINDER_STATES),
@@ -48,6 +50,7 @@ const ReminderSchema = new mongoose.Schema(
 
 ReminderSchema.index({ state: 1, status: 1, remind_at: 1 });
 ReminderSchema.index({ user_id: 1, status: 1, remind_at: 1 });
+ReminderSchema.index({ state: 1, status: 1, early_at: 1 });
 
 const Reminder = mongoose.model("Reminder", ReminderSchema);
 
